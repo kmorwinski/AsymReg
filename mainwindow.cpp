@@ -1,11 +1,11 @@
-#include "asymreg.h"
+#include "mainwindow.h"
 
 #include <QtGui/QLabel>
 #include <QtGui/QMenu>
 #include <QtGui/QMenuBar>
 #include <QtGui/QAction>
 
-asymreg::asymreg()
+MainWindow::MainWindow()
 {
     QLabel* l = new QLabel( this );
     l->setText( "Hello World!" );
@@ -16,7 +16,7 @@ asymreg::asymreg()
     menuBar()->addMenu( "File" )->addAction( a );
 }
 
-asymreg::~asymreg()
+MainWindow::~MainWindow()
 {}
 
-#include "asymreg.moc"
+#include "mainwindow.moc"

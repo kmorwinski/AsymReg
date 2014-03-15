@@ -1,11 +1,11 @@
 #include <QtGui/QApplication>
-#include "asymreg.h"
 
+#include "mainwindow.h"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
-    asymreg foo;
-    foo.show();
+    MainWindow mw;
+    mw.show();
     return app.exec();
 }
