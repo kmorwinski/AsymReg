@@ -11,9 +11,8 @@
 #include <iostream>
 #include <fstream>
 
-//#include "interpol.h"
-
 #include "eigen.h"
+#include "interpol.h"
 
 using namespace Eigen;
 
@@ -92,16 +91,6 @@ void MainWindow::runAsymReg()
     xVec.setLinSpaced(11, 0.0, 10.0);
     std::cout << xVec << std::endl;
 
-    //std::fstream fs;
-    fs.open("data.txt", std::fstream::in | std::fstream::out);
-    std::cout << "File opened: " << fs.is_open() << std::endl;
-
-    MatrixXd mat;
-    fs >> mat;
-    fs.close();
-
-    std::cout << mat << std::endl;
-
     VectorXd yVec;
     yVec.resizeLike(xVec);
     yVec.setZero();
@@ -113,13 +102,14 @@ void MainWindow::runAsymReg()
     yVec(6) = -5;
     std::cout << yVec << std::endl;
 
-    //LinearInterpol pressureFunction(xVec, yVec);
+    LinearInterpol pressureFunction(xVec, yVec);
 
     int n = 101;
     double step = 10. / (n - 1);
     for (int i = 0; i < n; i++) {
         xray[i] = i * step;
-        //yray[i] = pressureFunction.interpol(xray[i]);
+        yray[i] = pressureFunction.interpol(xray[i]);
+        //std::cout << "(" << xray[i] << "," << yray[i] << ")" << std::endl;
     }
 }
 

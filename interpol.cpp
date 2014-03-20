@@ -74,7 +74,7 @@ int BaseInterpol::hunt(const double x)
 
 double BaseInterpol::interpol(double x)
 {
-    int kLower = m_cor ? hunt(x) : locate(x);
+    int kLower = /*m_cor ? hunt(x) :*/ locate(x);
     return rawinterpol(kLower, x);
 }
 
@@ -112,6 +112,6 @@ double LinearInterpol::rawinterpol(int k, double x)
     if (m_x->coeff(k) == m_x->coeff(k + 1))
         return m_y[k];
 
-    return m_y[k] * ((x - m_x->coeff(k)) / m_x->coeff(k + 1) - m_x->coeff(k)) * (m_y[k+1] - m_y[k]);
+    return m_y[k] + (x - m_x->coeff(k)) / (m_x->coeff(k + 1) - m_x->coeff(k)) * (m_y[k+1] - m_y[k]);
 }
 
