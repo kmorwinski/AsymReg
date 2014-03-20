@@ -3,21 +3,18 @@
 
 #include "eigen.h"
 
-using namespace Eigen;
-
 class BaseInterpol
 {
 public:
-    BaseInterpol(const VectorXd &x, const double *y, int m);
+    BaseInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, int m);
 
     double interpol(double x);
 
 protected:
-    virtual double rawinterpol(int k, double x) = 0;
+    virtual double rawinterpol(int k, double x) const = 0;
 
-    const VectorXd *m_x;
+    const double *m_x;
     const double *m_y;
-
 
 private:
     int hunt(const double x);
@@ -29,16 +26,15 @@ private:
     int m_cor;
     int m_dj;
 
-    //const double *xx;
 };
 
 class LinearInterpol : public BaseInterpol
 {
 public:
-    LinearInterpol(const VectorXd &x, const VectorXd &y);
+    LinearInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
 
 protected:
-    virtual double rawinterpol(int k, double x);
+    virtual double rawinterpol(int k, double x) const;
 };
 
 #endif // INTERPOL_H_

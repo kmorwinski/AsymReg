@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <cmath>
 
-BaseInterpol::BaseInterpol(const VectorXd &x, const double *y, int m)
+BaseInterpol::BaseInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, int m)
     : m_n(x.size()),
       m_m(m),
       m_kLast(0),
       m_cor(0),
-      m_x(&x),
-      m_y(y)
+      m_x(x.data()),
+      m_y(y.data())
 {
     m_dj = std::min(1, (int)pow((double)m_n, .25));
 }
@@ -22,19 +22,19 @@ int BaseInterpol::hunt(const double x)
     int kLower = m_kLast;
     int kMiddle;
     int kUpper;
-    bool ascending = (m_x->coeff(m_n - 1) >= m_x->coeff(0));
+    bool ascending = (m_x[m_n - 1] >= m_x[0]);
     if ((kLower < 0) || (kLower > m_n - 1)) {
         kLower = 0;
         kUpper = m_n - 1;
     } else {
         int inc = 1;
-        if (x >= m_x->coeff(kLower) == ascending) { // hunt up
+        if (x >= m_x[kLower] == ascending) { // hunt up
             while (1) {
                 kUpper = kLower + inc;
                 if (kUpper >= m_n - 1) {
                     kUpper = m_n -1;
                     break;
-                } else if (x < m_x->coeff(kUpper) == ascending)
+                } else if (x < m_x[kUpper] == ascending)
                     break;
                 else {
                     kLower = kUpper;
@@ -48,7 +48,7 @@ int BaseInterpol::hunt(const double x)
                 if (kLower <= 0) {
                     kLower = 0;
                     break;
-                } else if (x >= m_x->coeff(kLower) == ascending)
+                } else if (x >= m_x[kLower] == ascending)
                     break;
                 else {
                     kUpper = kLower;
@@ -60,7 +60,7 @@ int BaseInterpol::hunt(const double x)
 
     while (kUpper - kLower > 1) {
         kMiddle = (kUpper + kLower) >> 1;
-        if (x >= m_x->coeff(kMiddle) == ascending)
+        if (x >= m_x[kMiddle] == ascending)
             kLower = kMiddle;
         else
             kUpper = kMiddle;
@@ -85,12 +85,12 @@ int BaseInterpol::locate(const double x)
 
     int kLower = 0;
     int kUpper = m_n - 1;
-    bool ascending = (m_x->coeff(m_n - 1) >= m_x->coeff(0));
+    bool ascending = (m_x[m_n - 1] >= m_x[0]);
 
     int kMid;
     while(kUpper - kLower > 1) {
         kMid = (kUpper + kLower) >> 1;
-        if (x >= m_x->coeff(kMid) == ascending)
+        if (x >= m_x[kMid] == ascending)
             kLower = kMid;
         else
             kUpper = kMid;
@@ -102,16 +102,16 @@ int BaseInterpol::locate(const double x)
     return std::max(0, std::min(m_n - m_m, kLower - ((m_m - 2) >> 1)));
 }
 
-LinearInterpol::LinearInterpol(const VectorXd &x, const VectorXd &y)
-    : BaseInterpol(x, y.data(), 2)
+LinearInterpol::LinearInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y)
+    : BaseInterpol(x, y, 2)
 {
 }
 
-double LinearInterpol::rawinterpol(int k, double x)
+double LinearInterpol::rawinterpol(int k, double x) const
 {
-    if (m_x->coeff(k) == m_x->coeff(k + 1))
+    if (m_x[k] == m_x[k + 1])
         return m_y[k];
 
-    return m_y[k] + (x - m_x->coeff(k)) / (m_x->coeff(k + 1) - m_x->coeff(k)) * (m_y[k+1] - m_y[k]);
+    return m_y[k] + (x - m_x[k]) / (m_x[k + 1] - m_x[k]) * (m_y[k+1] - m_y[k]);
 }
 

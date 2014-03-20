@@ -89,7 +89,6 @@ void MainWindow::runAsymReg()
 {
     VectorXd xVec;
     xVec.setLinSpaced(11, 0.0, 10.0);
-    std::cout << xVec << std::endl;
 
     VectorXd yVec;
     yVec.resizeLike(xVec);
@@ -100,7 +99,6 @@ void MainWindow::runAsymReg()
     yVec(4) = 3.5;
     yVec(5) = -1;
     yVec(6) = -5;
-    std::cout << yVec << std::endl;
 
     LinearInterpol pressureFunction(xVec, yVec);
 
@@ -109,7 +107,6 @@ void MainWindow::runAsymReg()
     for (int i = 0; i < n; i++) {
         xray[i] = i * step;
         yray[i] = pressureFunction.interpol(xray[i]);
-        //std::cout << "(" << xray[i] << "," << yray[i] << ")" << std::endl;
     }
 }
 
