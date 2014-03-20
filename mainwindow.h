@@ -5,10 +5,15 @@
 
 class MainWindow : public QMainWindow
 {
-Q_OBJECT
+    Q_OBJECT
+
 public:
     MainWindow();
     virtual ~MainWindow();
+
+private slots:
+    void plotPressureFunction();
+    void runAsymReg();
 };
 
 #endif // MAINWINDOW_H_
