@@ -115,3 +115,62 @@ double LinearInterpol::rawinterpol(int k, double x) const
     return m_y[k] + (x - m_x[k]) / (m_x[k + 1] - m_x[k]) * (m_y[k+1] - m_y[k]);
 }
 
+SplineInterpol::SplineInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, double yp1, double ypn)
+    : BaseInterpol(x, y, 2),
+      m_y2(x.size())
+{
+    sety2(x.data(), y.data(), yp1, ypn);
+}
+
+void SplineInterpol::sety2(const double *x, const double *y, double yp1, double ypn)
+{
+    const int n = m_y2.size();
+    Eigen::VectorXd u(n);
+    if (yp1 > 0.99e99) {
+        m_y2(0) = .0;
+        u(0) = .0;
+    } else {
+        m_y2(0) = -.5;
+        u(0) = (3.0/(m_x[1] - m_x[0])) * ((m_y[1] - m_y[0]) / (m_x[1] - m_x[0]) - yp1);
+    }
+
+    for (int i = 0; i < n; ++i) {
+        double sig = (m_x[i] - m_x[i-1]) / (m_x[i+1] - m_x[i-1]);
+        double p = sig * m_y2.coeff(i-1) + 2.0;
+        m_y2(i) = (sig - 1.0) / p;
+        u(i) = (m_y[i+1] - m_y[i]) / (m_x[i+1] - m_x[i]) - (m_y[i] - m_y[i-1]) / (m_x[i] - m_x[i-1]);
+        u(i) = (6.0 * u.coeff(i) / (m_x[i+1] - m_x[i-1]) - sig * u.coeff(i-1)) / p;
+    }
+
+    double qn;
+    double un;
+    if (ypn > 0.99e99) {
+        qn = .0;
+        un = .0;
+    } else {
+        qn = .5;
+        un = (3.0/(m_x[n-1] - m_x[n-2])) * (ypn - (m_y[n-1] - m_y[n-2]) / (m_x[n-1] - m_x[n-2]));
+    }
+
+    m_y2(n-1) = (un - qn * u.coeff(n-2)) / (qn * m_y2.coeff(n-2) + 1.0);
+    for (int k = n-2; k >= 0; --k)
+        m_y2(k) = m_y2.coeff(k) * m_y2.coeff(k+1) + u.coeff(k);
+}
+
+double SplineInterpol::rawinterpol(int k, double x) const
+{
+    int kLow = k;
+    int kHigh = k + 1;
+    double h = m_x[kHigh] - m_x[kLow];
+    if (h == .0)
+        throw("Bad input to routine spline-interpol");
+
+    double a = (m_x[kHigh] - x) / h;
+    double b = (x - m_x[kLow]) / h;
+
+    double y = a * m_y[kLow] + b * m_y[kHigh] +
+            ((a * a * a - a) * m_y2.coeff(kLow) +
+             (b * b * b -b) * m_y2.coeff(kHigh)) * (h * h) / 6.0;
+
+    return y;
+}
