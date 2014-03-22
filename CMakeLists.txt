@@ -1,6 +1,15 @@
 project(asymreg)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+# C++11 Support
+include(CXX11)
+check_for_cxx11_compiler(CXX11_COMPILER)
+if(CXX11_COMPILER)
+    enable_cxx11()
+else()
+    message(FATAL_ERROR "C++11 standard is requiered for this project!")
+endif()
 
 # QT 4.8
 find_package(Qt4 4.8 REQUIRED)
