@@ -8,7 +8,7 @@ class BaseInterpol
 public:
     BaseInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, int m);
 
-    double interpol(double x);
+    double interpol(double x) const;
 
 protected:
     virtual double rawinterpol(int k, double x) const = 0;
@@ -17,14 +17,16 @@ protected:
     const double *m_y;
 
 private:
-    int hunt(const double x);
-    int locate(const double x);
+    int hunt(const double x) const;
+    int bisect(const double x) const;
 
-    int m_n;
-    int m_m;
-    int m_kLast;
-    int m_cor;
-    int m_dj;
+    int m_indexThreshold;
+    mutable bool m_localIndex;
+    mutable int m_lastIndex;
+    int m_M;
+    int m_N;
+
+    friend class BilinearInterpol;
 };
 
 class LinearInterpol : public BaseInterpol
@@ -48,6 +50,19 @@ private:
     void sety2(const double *x, const double *y, double yp1, double ypn);
 
     Eigen::VectorXd m_y2;
+};
+
+class BilinearInterpol
+{
+public:
+    BilinearInterpol(const Eigen::VectorXd &x1, const Eigen::VectorXd &x2, const Eigen::MatrixXd &y);
+
+    double interpol(double x1, double x2) const;
+
+private:
+    LinearInterpol m_x1interpol;
+    LinearInterpol m_x2interpol;
+    Eigen::MatrixXd m_y;
 };
 
 #endif // INTERPOL_H_
