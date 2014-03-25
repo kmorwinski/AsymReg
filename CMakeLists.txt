@@ -26,6 +26,7 @@ set(asymreg_SRCS
     main.cpp
     mainwindow.cpp
     interpol.cpp
+    plotter.cpp
 )
 
 # header files
