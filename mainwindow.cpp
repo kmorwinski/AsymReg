@@ -13,6 +13,7 @@
 #include "eigen.h"
 #include "interpol.h"
 #include "plotter.h"
+#include "plottersettingsdialog.h"
 
 using namespace std;
 using namespace Eigen;
@@ -24,21 +25,38 @@ static double zheight[101][101];
 static BilinearInterpol *func = nullptr;
 
 MainWindow::MainWindow()
+    : m_pressureFunctionPlotSettings(nullptr)
 {
     QAction* a = new QAction(this);
-    a->setText( "Quit" );
+    a->setText(tr("Quit"));
     connect(a, SIGNAL(triggered()), SLOT(close()) );
-    menuBar()->addMenu( "File" )->addAction( a );
+    menuBar()->addMenu(tr("File"))->addAction( a );
 
     QPushButton *runAsymRegButton = new QPushButton;
-    runAsymRegButton->setText("run math");
+    runAsymRegButton->setText(tr("Run Math"));
     connect(runAsymRegButton, SIGNAL(clicked(bool)),
             this, SLOT(runAsymReg()));
 
+    m_confNplotPressFuncAction = new QAction(this);
+    m_confNplotPressFuncAction->setText(tr("Configure And Plot Pressure Function"));
+
+    m_plotPressFuncAction = new QAction(this);
+    m_plotPressFuncAction->setText(tr("Plot Pressure Function"));
+
+    QActionGroup *actionGroup = new QActionGroup(this);
+    actionGroup->addAction(m_plotPressFuncAction);
+    actionGroup->addAction(m_confNplotPressFuncAction);
+    connect(actionGroup, SIGNAL(triggered(QAction*)),
+            this, SLOT(plotPressureFunction(QAction *)));
+
+    QMenu *buttonMenu = new QMenu;
+    buttonMenu->addActions(actionGroup->actions());
+
     QPushButton *plotPressureFunctionButton = new QPushButton;
-    plotPressureFunctionButton->setText("Plot Pressure Funtion");
+    plotPressureFunctionButton->setText(tr("Plot Options"));
+    plotPressureFunctionButton->setMenu(buttonMenu);
     connect(plotPressureFunctionButton, SIGNAL(clicked(bool)),
-        this, SLOT(plotPressureFunction()));
+        this, SLOT(plotPressureFunction(QAction *)));
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(runAsymRegButton);
@@ -51,11 +69,34 @@ MainWindow::MainWindow()
 MainWindow::~MainWindow()
 {}
 
-void MainWindow::plotPressureFunction()
+void MainWindow::plotPressureFunction(QAction *action)
 {
     if (func == nullptr)
         return;
 
+    bool needConfigDialog = false;
+
+    if (m_pressureFunctionPlotSettings == nullptr) {
+        needConfigDialog = true;
+        m_pressureFunctionPlotSettings = new ContourPlotterSettings;
+    }
+
+    if (action == m_confNplotPressFuncAction)
+        needConfigDialog = true;
+
+    if (needConfigDialog) {
+        ContourPlotterSettings *sett = new ContourPlotterSettings(*m_pressureFunctionPlotSettings);
+        PlotterSettingsDialog dialog(this);
+        dialog.setPlotterSettings(sett);
+        auto ret = dialog.exec();
+        if (ret == QDialog::Rejected)
+            return;
+
+        delete m_pressureFunctionPlotSettings;
+        m_pressureFunctionPlotSettings = sett;
+    }
+
+#if 0
     Plotter::Span xSpan = std::make_tuple(0., 10.);
     Plotter::Span ySpan = make_tuple(0., 10.);
     Plotter::Span zSpan = make_tuple(-2., 2.);
@@ -71,32 +112,34 @@ void MainWindow::plotPressureFunction()
             zmat[i][j] = func->interpol(x, y);
         }
     }
+#endif //0
+    VectorXd X, Y;
+    X.setLinSpaced(101, 0., 10.);
+    Y = X;
 
-    ContourPlotter plotter(.35, Plotter::Display_Widget);
-    plotter.plotData(&zmat[0][0], xSpan, ySpan, zSpan, steps);
+    MatrixXd Z;
+    Z.resize(X.size(), Y.size());
+    for (int i = 0; i < X.size(); ++i) {
+        for (int j = 0; j < Y.size(); ++j)
+            Z(i,j) = func->interpol(X(i),Y(j));
+    }
+
+    m_pressureFunctionPlotSettings->setTitle("hier koennte ihr Titel stehen", 3);
+    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::X_Axis);
+    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::Y_Axis);
+    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(-3., 3.), PlotterSettings::Z_Axis);
+    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::Display_Widget);
+    plotter.setData(X, Y, Z);
 }
 
 void MainWindow::runAsymReg()
 {
-    VectorXd xVec;
-    xVec.setLinSpaced(11, 0.0, 10.0);
-    VectorXd yVec(xVec);
-
-    /*VectorXd yVec;
-    yVec.resizeLike(xVec);
-    yVec.setZero();
-    yVec(1) = 2;
-    yVec(2) = 2;
-    yVec(3) = 3;
-    yVec(4) = 3.5;
-    yVec(5) = -1;
-    yVec(6) = -5;
-
-    LinearInterpol pressureFunction(xVec, yVec);*/
-    //SplineInterpol pressureFunction(xVec, yVec);
+    VectorXd xVec, yVec;
+    xVec.setLinSpaced(11, 0., 10.);
+    yVec.setLinSpaced(11, 0., 10.);
 
     MatrixXd zMat;
-    zMat.resize(xVec.size(), yVec.size());
+    zMat.resize(11, 11);
     zMat.setZero();
 
     std::fstream fs;

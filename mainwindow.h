@@ -3,6 +3,8 @@
 
 #include <QtGui/QMainWindow>
 
+class ContourPlotterSettings;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -12,8 +14,13 @@ public:
     virtual ~MainWindow();
 
 private slots:
-    void plotPressureFunction();
+    void plotPressureFunction(QAction *action = nullptr);
     void runAsymReg();
+
+private:
+    ContourPlotterSettings *m_pressureFunctionPlotSettings;
+    QAction *m_confNplotPressFuncAction;
+    QAction *m_plotPressFuncAction;
 };
 
 #endif // MAINWINDOW_H_
