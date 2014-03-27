@@ -42,9 +42,9 @@ include_directories(
 # build & link executable
 qt4_automoc(${asymreg_SRCS})
 
-add_executable(asymreg ${asymreg_SRCS})
+add_executable(${PROJECT_NAME} ${asymreg_SRCS})
 
-target_link_libraries(asymreg
+target_link_libraries(${PROJECT_NAME}
     ${QT_QTCORE_LIBRARY}
     ${QT_QTGUI_LIBRARY}
     ${DISLIN_LIB}
@@ -52,3 +52,8 @@ target_link_libraries(asymreg
 
 # intall
 install(TARGETS asymreg RUNTIME DESTINATION bin)
+
+# dummy project for additional files to show up in project tree
+
+file(GLOB DATA_FILES "${PROJECT_SOURCE_DIR}/data/*.csv")
+add_custom_target(${PROJECT_NAME}-dummy SOURCES ${DATA_FILES})

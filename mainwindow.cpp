@@ -143,8 +143,8 @@ void MainWindow::runAsymReg()
     zMat.setZero();
 
     std::fstream fs;
-    //fs.open("data.txt", std::fstream::out | std::fstream::trunc);
-    fs.open("data.txt", std::fstream::in);
+    //fs.open("../data/data.csv", std::fstream::out | std::fstream::trunc);
+    fs.open("../data/data.csv", std::fstream::in);
     fs >> zMat;
     fs.close();
 

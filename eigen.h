@@ -2,7 +2,7 @@
 #define EIGEN_H_
 
 // set CSV Format as default:
-//#define EIGEN_DEFAULT_IO_FORMAT IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
+#define EIGEN_DEFAULT_IO_FORMAT IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
 
 #include <Eigen/Dense>
 
