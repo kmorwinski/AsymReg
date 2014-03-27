@@ -9,7 +9,8 @@
 #include "plottersettings.h"
 
 PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
-    : QDialog(parent)
+    : QDialog(parent),
+      m_settings(nullptr)
 {
     m_heightSpinBox = new QSpinBox;
     m_heightSpinBox->setMinimum(0);
