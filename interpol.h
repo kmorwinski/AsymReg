@@ -13,13 +13,15 @@ public:
 protected:
     virtual double rawinterpol(int k, double x) const = 0;
 
-    const double *m_x;
-    const double *m_y;
+    const double *xData() const;
+    const double *yData() const;
 
 private:
     int hunt(const double x) const;
     int bisect(const double x) const;
 
+    Eigen::VectorXd m_x;
+    Eigen::VectorXd m_y;
     int m_indexThreshold;
     mutable bool m_localIndex;
     mutable int m_lastIndex;
