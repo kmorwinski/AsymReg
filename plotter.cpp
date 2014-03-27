@@ -60,9 +60,10 @@ void ContourPlotter::setData(const Eigen::VectorXd &xVec, const Eigen::VectorXd 
     // IXDIM, IYDIM: define the dimension of ZMAT (>= 2).
     // IXPTS, IYPTS: are the number of interpolation steps between grid lines (>= 1). CRVMAT can interpolate points linearly.
     //m_dislin.crvmat(dataMatrix, steps, steps, 1, 1);
+    m_dislin.crvmat(zMat.data(), zMat.rows(), zMat.cols(), 10, 10); // TODO: IXPTS und IYPTS chosen properly?
 
     //surfce (const float *xray, int ixdim, const float *yray, int iydim, const float *zmat)
-    m_dislin.surfce(xVec.data(), xVec.size(), yVec.data(), yVec.size(), zMat.data());
+    //m_dislin.surfce(xVec.data(), xVec.size(), yVec.data(), yVec.size(), zMat.data());
 }
 
 Plotter::Plotter(const PlotterSettings &settings, OutputType out)
