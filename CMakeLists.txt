@@ -12,7 +12,7 @@ else()
 endif()
 
 # QT 4.8
-find_package(Qt4 4.8 REQUIRED)
+find_package(Qt4 4.8 COMPONENTS QtSvg REQUIRED)
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
@@ -48,6 +48,7 @@ add_executable(${PROJECT_NAME} ${asymreg_SRCS})
 target_link_libraries(${PROJECT_NAME}
     ${QT_QTCORE_LIBRARY}
     ${QT_QTGUI_LIBRARY}
+    ${QT_QTSVG_LIBRARY}
     ${DISLIN_LIB}
 )
 
