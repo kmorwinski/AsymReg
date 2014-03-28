@@ -29,6 +29,7 @@ set(asymreg_SRCS
     plotter.cpp
     plottersettings.cpp
     plottersettingsdialog.cpp
+    svgviewer.cpp
 )
 
 # header files
