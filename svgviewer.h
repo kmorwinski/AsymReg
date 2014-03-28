@@ -1,18 +1,21 @@
-#ifndef SVGVIEWER_H
-#define SVGVIEWER_H
+#ifndef SVGVIEWER_H_
+#define SVGVIEWER_H_
 
-#include <QMainWindow>
+#include <QtGui/QMainWindow>
 
 class SvgViewer : public QMainWindow
 {
     Q_OBJECT
+
 public:
-    explicit SvgViewer(QWidget *parent = 0);
+    SvgViewer(const QString &file, const QString &title);
 
-signals:
+private slots:
+    void saveImage();
 
-public slots:
-
+private:
+    QString m_file;
+    bool m_saved;
 };
 
-#endif // SVGVIEWER_H
+#endif // SVGVIEWER_H_
