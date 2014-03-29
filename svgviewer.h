@@ -10,12 +10,15 @@ class SvgViewer : public QMainWindow
 public:
     SvgViewer(const QString &file, const QString &title);
 
+protected:
+    void closeEvent(QCloseEvent *event);
+
 private slots:
     void saveImage();
 
 private:
     QString m_file;
-    bool m_saved;
+    QString m_title;
 };
 
 #endif // SVGVIEWER_H_

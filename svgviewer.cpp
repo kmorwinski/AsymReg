@@ -1,28 +1,35 @@
 #include "svgviewer.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QTextStream>
 
 #include <QtGui/QAction>
+#include <QtGui/QCloseEvent>
+#include <QtGui/QFileDialog>
 #include <QtGui/QIcon>
 #include <QtGui/QLabel>
+#include <QtGui/QMessageBox>
+#include <QtGui/QShortcut>
 #include <QtGui/QStatusBar>
 #include <QtGui/QToolBar>
 
 #include <QtSvg/QSvgWidget>
 
 SvgViewer::SvgViewer(const QString &file, const QString &title)
-    : m_saved(false)
+    : m_title(title)
 {
     // window title:
     static int _num = 0; // running number
-    setWindowTitle(tr("Plot %1: ").arg(++_num) + title);
+    QString appName = qApp->applicationName();
+    setWindowTitle(tr("Plot %1: %2[*] - %3").arg(++_num).arg(title).arg(appName));
 
     // toolbar:
     QAction *closeAction = new QAction(this);
     closeAction->setText(tr("&Close"));
     closeAction->setIcon(QIcon::fromTheme("window-close"));
+    closeAction->setShortcut(Qt::Key_Escape);
     connect(closeAction, SIGNAL(triggered()),
             this, SLOT(close()));
 
@@ -72,8 +79,9 @@ SvgViewer::SvgViewer(const QString &file, const QString &title)
     } else {
         // enable saving:
         saveAsAction->setEnabled(true);
-        setWindowTitle(windowTitle() + '*'); // add '*' to show that it is unsaved
         m_file = file;
+        // adds '*' to show that it is unsaved and makes closeEvent() complain:
+        setWindowModified(true);
     }
 
     // central widget:
@@ -85,17 +93,58 @@ SvgViewer::SvgViewer(const QString &file, const QString &title)
     setAttribute(Qt::WA_DeleteOnClose); // auto delete this class
 }
 
+void SvgViewer::closeEvent(QCloseEvent *event)
+{
+    if (isWindowModified()) {
+        // prepare questions and information:
+        QString title = tr("Close Plot - %1").arg(qApp->applicationName());
+        QString text = tr("The plot \"%1\" has not been saved.").arg(m_title);
+        QString infoText = tr("Do you want to save as SVG image or discard it?");
+
+        // construct dialog:
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(title);
+        msgBox.setText(text);
+        msgBox.setInformativeText(infoText);
+        msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard |
+                                  QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Save);
+
+        // show dialog and evaluate answer:
+        auto ret = msgBox.exec();
+        if (ret == QMessageBox::Cancel) {
+            event->ignore();
+            return;
+        } else if (ret == QMessageBox::Save)
+            saveImage();
+    }
+
+    event->accept();
+}
+
 void SvgViewer::saveImage()
 {
     if (m_file.isEmpty())
         return;
 
-    // remove trailing star:
-    QString t = windowTitle();
-    if (t.endsWith('*'))
-        setWindowTitle(t.left(t.size()-1));
+    QString title = tr("Save File - %1").arg(qApp->applicationName());
+    QDir dir("../data");
+    QString proposedFile = tr("%1/%2").arg(dir.canonicalPath()).arg(m_file);
+    QString filter = tr("SVG Images(*.svg);;All Files(*.*)");
+    QString newFile = QFileDialog::getSaveFileName(this,
+                                                   title,
+                                                   proposedFile,
+                                                   filter);
 
-    m_saved = true;
+    if (newFile.isEmpty()) // save aborted?
+        return;
+    if (QFile::exists(newFile)) // files does exist?
+        QFile::remove(newFile); // ... remove it, otherwise ::copy will fail
+    bool copied = QFile::copy(m_file, newFile);
+    if (!copied) // copy failed?
+        statusBar()->showMessage(tr("Saving Failed!"), 5000);
+    else
+        setWindowModified(false); // removes trailing star in windowtitle
 }
 
 #include "svgviewer.moc"
