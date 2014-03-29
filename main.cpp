@@ -5,6 +5,8 @@
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
+    app.setApplicationName("AsymReg");
+
     MainWindow mw;
     mw.show();
     return app.exec();
