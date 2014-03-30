@@ -14,9 +14,11 @@ protected:
     void closeEvent(QCloseEvent *event);
 
 private slots:
-    void saveImage();
+    bool saveImage();
 
 private:
+    QString readableFileSize(qint64 fileSize) const;
+
     QString m_file;
     QString m_title;
 };

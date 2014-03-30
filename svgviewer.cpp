@@ -48,13 +48,11 @@ SvgViewer::SvgViewer(const QString &file, const QString &title)
 
     // statusbar:
     QFileInfo info(file);
-    QLabel *nameLabel = new QLabel;
-    nameLabel->setText(tr("Filename: ") + info.fileName());
-    statusBar()->addPermanentWidget(nameLabel);
-
-    QLabel *sizeLabel = new QLabel;
-    sizeLabel->setText(tr("Size: %1b").arg(info.size()));
-    statusBar()->addPermanentWidget(sizeLabel);
+    QString infoString = info.fileName()
+            + " (" + readableFileSize(info.size()) + ')';
+    QLabel *fileInfoLabel = new QLabel;
+    fileInfoLabel->setText(infoString);
+    statusBar()->addPermanentWidget(fileInfoLabel);
 
     // try reading svg from file:
     QByteArray imageData;
@@ -115,29 +113,48 @@ void SvgViewer::closeEvent(QCloseEvent *event)
         if (ret == QMessageBox::Cancel) {
             event->ignore();
             return;
-        } else if (ret == QMessageBox::Save)
-            saveImage();
+        } else if (ret == QMessageBox::Save) {
+            bool saved = saveImage();
+            if (!saved) {
+                event->ignore();
+                return;
+            }
+        }
     }
 
     event->accept();
 }
 
-void SvgViewer::saveImage()
+QString SvgViewer::readableFileSize(qint64 fileSize) const
+{
+    double fileSizeInBytes = fileSize;
+    char byteUnitPrefixes[] = {'k', 'M', 'G', 'T'};
+    int i = -1;
+    do {
+        fileSizeInBytes /= 1024.;
+        i++;
+    } while ((fileSizeInBytes > 1024.) && (i < 3));
+
+    return QString("%L1%2B").arg(fileSizeInBytes, 0, 'f', 2)
+            .arg(byteUnitPrefixes[i]);
+}
+
+bool SvgViewer::saveImage()
 {
     if (m_file.isEmpty())
-        return;
+        return false;
 
     QString title = tr("Save File - %1").arg(qApp->applicationName());
     QDir dir("../data");
     QString proposedFile = tr("%1/%2").arg(dir.canonicalPath()).arg(m_file);
-    QString filter = tr("SVG Images(*.svg);;All Files(*.*)");
+    QString filter = tr("Scalable Vector Graphics(*.svg);;All Files(*.*)");
     QString newFile = QFileDialog::getSaveFileName(this,
                                                    title,
                                                    proposedFile,
                                                    filter);
 
     if (newFile.isEmpty()) // save aborted?
-        return;
+        return false;
     if (QFile::exists(newFile)) // files does exist?
         QFile::remove(newFile); // ... remove it, otherwise ::copy will fail
     bool copied = QFile::copy(m_file, newFile);
@@ -145,6 +162,8 @@ void SvgViewer::saveImage()
         statusBar()->showMessage(tr("Saving Failed!"), 5000);
     else
         setWindowModified(false); // removes trailing star in windowtitle
+
+    return copied;
 }
 
 #include "svgviewer.moc"
