@@ -1,6 +1,10 @@
 #include "mainwindow.h"
 
+#include <QtCore/QDir>
+#include <QtCore/QFileSystemWatcher>
+
 #include <QtGui/QAction>
+#include <QtGui/QCloseEvent>
 #include <QtGui/QMenu>
 #include <QtGui/QMenuBar>
 #include <QtGui/QPushButton>
@@ -14,6 +18,7 @@
 #include "interpol.h"
 #include "plotter.h"
 #include "plottersettingsdialog.h"
+#include "svgviewer.h"
 
 using namespace std;
 using namespace Eigen;
@@ -64,10 +69,45 @@ MainWindow::MainWindow()
 
     setCentralWidget(new QWidget);
     centralWidget()->setLayout(layout);
+
+    QDir dir(QDir::currentPath());
+    m_plotWatcher = new QFileSystemWatcher;
+    m_plotWatcher->addPath(dir.canonicalPath());
+    connect(m_plotWatcher, SIGNAL(directoryChanged(QString)),
+            this, SLOT(showSvgViewer(QString)));
 }
 
 MainWindow::~MainWindow()
-{}
+{
+    // delete class members:
+    delete m_plotWatcher;
+
+    // clean up plot files:
+    QDir dir(QDir::currentPath());
+    QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"};
+    QStringList images = dir.entryList(nameFilters, QDir::Files);
+    auto it = images.constBegin();
+    while (it != images.constEnd())
+        QFile::remove(*it++);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (!m_svgViewerList.isEmpty()) {
+        auto it = m_svgViewerList.begin();
+        do {
+            if (*it) {
+                bool closed = (*it)->close();
+                if (!closed) {
+                    event->ignore();
+                    return;
+                }
+            }
+        } while (++it != m_svgViewerList.end());
+    }
+
+    event->accept();
+}
 
 void MainWindow::plotPressureFunction(QAction *action)
 {
@@ -128,7 +168,7 @@ void MainWindow::plotPressureFunction(QAction *action)
     m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::X_Axis);
     m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::Y_Axis);
     m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(-3., 3.), PlotterSettings::Z_Axis);
-    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::Display_Widget);
+    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::SVG_Image);
     plotter.setData(X, Y, Z);
 }
 
@@ -150,6 +190,19 @@ void MainWindow::runAsymReg()
 
     auto t1 = std::chrono::high_resolution_clock::now();
     func = new BilinearInterpol(xVec, yVec, zMat);
+}
+
+void MainWindow::showSvgViewer(const QString &path)
+{
+    // use QDir class to filter all image files in 'path'
+    // and sort by modification date:
+    QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"}; // TODO: add more image types
+    QStringList images = QDir(path).entryList(nameFilters, QDir::Files, QDir::Time);
+
+    // assume top entry in images-list is the one that was output by dislin:
+    SvgViewer *svgViewer = new SvgViewer("../data/err2.svg"/*images.at(0)*/, "a simple image");
+    m_svgViewerList << svgViewer;
+    svgViewer->show();
 }
 
 #include "mainwindow.moc"
