@@ -96,25 +96,9 @@ void MainWindow::plotPressureFunction(QAction *action)
         m_pressureFunctionPlotSettings = sett;
     }
 
-#if 0
-    Plotter::Span xSpan = std::make_tuple(0., 10.);
-    Plotter::Span ySpan = make_tuple(0., 10.);
-    Plotter::Span zSpan = make_tuple(-2., 2.);
-    int steps = 100;
-
-    double stepSize = abs(0. - 10.) / steps;
-    float zmat[steps][steps];
-
-    for (int i = 0; i < steps; i++) {
-        double x = i * stepSize;
-        for (int j = 0; j < steps; ++j) {
-            double y = j * stepSize;
-            zmat[i][j] = func->interpol(x, y);
-        }
-    }
-#endif //0
+    int steps = 200;
     VectorXd X, Y;
-    X.setLinSpaced(101, 0., 10.);
+    X.setLinSpaced(steps, 0., 10.);
     Y = X;
 
     MatrixXd Z;
@@ -129,7 +113,7 @@ void MainWindow::plotPressureFunction(QAction *action)
     m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::Y_Axis);
     m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(-3., 3.), PlotterSettings::Z_Axis);
     ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::Display_Widget);
-    plotter.setData(X, Y, Z);
+    plotter.setData(Z);
 }
 
 void MainWindow::runAsymReg()

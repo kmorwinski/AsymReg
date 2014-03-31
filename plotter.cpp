@@ -24,14 +24,26 @@ ContourPlotter::ContourPlotter(const PlotterSettings &settings, OutputType out)
     // NDIG = n	defines the number of digits after the decimal point. The last digit will be rounded up.
     // CAX is a character string that defines the axes. Default: (1, 'XYZ').
     m_dislin.labdig(-1, "x");
+#endif // 0
 
     // This routine is used to define the number of ticks between axis labels.
     // level 1,2,3
     // NTIC is the number of ticks (>= 0).
     // CAX is a character string that defines the axes. Default: (2, 'XYZ').
-    m_dislin.ticks(9, "x");
-    m_dislin.ticks(10, "y");
-#endif // 0
+    m_dislin.ticks(10, "xy");
+}
+
+void ContourPlotter::setData(const Eigen::MatrixXd &zMat)
+{
+    setData(zMat.data(), zMat.rows(), zMat.cols());
+}
+
+void ContourPlotter::setData(const double *zmat, int xSteps, int ySteps)
+{
+    // With a call to AUTRES, the size of coloured rectangles will be automatically calculated by GRAF3 or CRVMAT.
+    // level 1
+    // IXDIM, IYDIM: are the number of data points in the X- and Y-direction.
+    m_dislin.autres(xSteps, ySteps);
 
     // The routine GRAF3 plots a 3-D axis system where the Z-axis is plotted as a colour bar.
     // level 1
@@ -42,28 +54,20 @@ ContourPlotter::ContourPlotter(const PlotterSettings &settings, OutputType out)
     // ZA, ZE: are the lower and upper limits of the Z-axis.
     // ZOR, ZSTP: are the first Z-axis label and the step between labels.
     auto spans = m_settings.axisSpans();
-    m_dislin.graf3(spans.at(PlotterSettings::X_Axis).first, spans.at(PlotterSettings::X_Axis).second,
-                   spans.at(PlotterSettings::X_Axis).first, 1.,
-                   spans.at(PlotterSettings::Y_Axis).first, spans.at(PlotterSettings::Y_Axis).second,
-                   spans.at(PlotterSettings::Y_Axis).first, 1.,
-                   spans.at(PlotterSettings::Z_Axis).first, spans.at(PlotterSettings::Z_Axis).second,
-                   spans.at(PlotterSettings::Z_Axis).first, 1.);
-}
+    auto xa = spans.at(PlotterSettings::X_Axis).first,
+         xe = spans.at(PlotterSettings::X_Axis).second,
+         xstp = (xe - xa)/4.;
+    auto ya = spans.at(PlotterSettings::Y_Axis).first,
+         ye = spans.at(PlotterSettings::Y_Axis).second,
+         ystp = (ye - ya)/4.;
+    auto za = spans.at(PlotterSettings::Z_Axis).first,
+         ze = spans.at(PlotterSettings::Z_Axis).second,
+         zstp =  (ze - za)/4.;
+    m_dislin.graf3(xa, xe, xa, xstp,
+                   ya, ye, ya, ystp,
+                   za, ze, za, zstp);
 
-void ContourPlotter::setData(const Eigen::VectorXd &xVec, const Eigen::VectorXd &yVec, const Eigen::MatrixXd &zMat)
-{
-    // CRVMAT plots a coloured surface according to a matrix
-    // level 3
-    // ZMAT: is a matrix of the dimension (IXDIM, IYDIM) containing Z-coordinates. The coordinates correspond to a linear grid that overlays the axis system. If XA, XE, YA and YE are the axis limits in GRAF3 or values defined with the routine SURSZE, the relationship between the grid points and the matrix elements can be described by the formula:
-    // ZMAT(I,J) = F(X,Y) where X = XA + (I - 1) * (XE - XA) / (IXDIM - 1) , I = 1,..,IXDIM and
-    // Y = YA + (J - 1) * (YE - YA) / (IYDIM - 1) , J = 1,..,IYDIM.
-    // IXDIM, IYDIM: define the dimension of ZMAT (>= 2).
-    // IXPTS, IYPTS: are the number of interpolation steps between grid lines (>= 1). CRVMAT can interpolate points linearly.
-    //m_dislin.crvmat(dataMatrix, steps, steps, 1, 1);
-    m_dislin.crvmat(zMat.data(), zMat.rows(), zMat.cols(), 10, 10); // TODO: IXPTS und IYPTS chosen properly?
-
-    //surfce (const float *xray, int ixdim, const float *yray, int iydim, const float *zmat)
-    //m_dislin.surfce(xVec.data(), xVec.size(), yVec.data(), yVec.size(), zMat.data());
+    m_dislin.crvmat(zmat, xSteps, ySteps, 1, 1);
 }
 
 Plotter::Plotter(const PlotterSettings &settings, OutputType out)

@@ -37,7 +37,8 @@ class ContourPlotter : public Plotter
 public:
     ContourPlotter(const PlotterSettings &settings, OutputType out = SVG_Image);
 
-    void setData(const Eigen::VectorXd &xVec, const Eigen::VectorXd &yVec, const Eigen::MatrixXd &zMat);
+    void setData(const Eigen::MatrixXd &zMat);
+    void setData(const double *zmat, int xSteps, int ySteps);
 };
 
 #endif // PLOTTER_H_
