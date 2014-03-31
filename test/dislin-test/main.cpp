@@ -1,21 +1,19 @@
 #include <iostream>
 #include <math.h>
 
-//namespace dislin {
 #include <discpp.h>
-//}
+
+#define STEPS 200
 
 int main(int argc, char **argv)
 {
-    double zmat[100][100];
-    int n = 100, i, j;
-    double fpi = 3.1415927 / 180.0, step, x, y;
-
-    step = 360.0 / (n - 1);
-    for (i = 0; i < n; i++) {
-        x = i * step;
-        for (j = 0; j < n; j++) {
-            y = j * step;
+    double zmat[STEPS][STEPS];
+    double fpi = 3.1415927 / 180.0;
+    double stepSize = 360.0 / (STEPS - 1);
+    for (int i = 0; i < STEPS; i++) {
+        double x = i * stepSize;
+        for (int j = 0; j < STEPS; j++) {
+            double y = j * stepSize;
             zmat[i][j] = 2 * sin(x * fpi) * sin(y * fpi);
         }
     }
@@ -37,17 +35,18 @@ int main(int argc, char **argv)
     g.name("Z-axis", "z");
 
     g.intax();
-    g.autres(n, n);
+    g.autres(STEPS, STEPS); // <-- bestimmt Qualitaet der Grafik!!!
     g.axspos(300, 1850);
     g.ax3len(2200, 1400, 1400);
 
     g.graf3(0.0, 360.0, 0.0, 90.0, 0.0, 360.0, 0.0, 90.0,
-              -2.0, 2.0, -2.0, 1.0);
-    g.crvmat((double *) zmat, n, n, 1, 1);
+            -2.0, 2.0, -2.0, 1.0);
+    g.crvmat((double *)zmat, STEPS, STEPS, 1, 1);
 
     g.height(50);
 
-    g.complx();
+    g.hwfont(); // hardware fonts (sehen für cons und svg gut aus)
     g.disfin();
+
     return 0;
 }
