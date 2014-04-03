@@ -3,6 +3,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QScopedPointer>
 #include <QtCore/QTextStream>
 
 #include <QtGui/QAction>
@@ -16,6 +17,10 @@
 #include <QtGui/QToolBar>
 
 #include <QtSvg/QSvgWidget>
+
+#ifdef QT_HAS_IOCOMPRESSOR
+#  include <QtSolutions/QtIOCompressor>
+#endif
 
 SvgViewer::SvgViewer(const QString &file, const QString &title)
     : m_title(title)
@@ -44,6 +49,7 @@ SvgViewer::SvgViewer(const QString &file, const QString &title)
     toolBar->addAction(closeAction);
     toolBar->addAction(saveAsAction);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolBar->setMovable(false);
     addToolBar(Qt::TopToolBarArea, toolBar);
 
     // statusbar:
@@ -147,23 +153,49 @@ bool SvgViewer::saveImage()
     QString title = tr("Save File - %1").arg(qApp->applicationName());
     QDir dir("../data");
     QString proposedFile = tr("%1/%2").arg(dir.canonicalPath()).arg(m_file);
-    QString filter = tr("Scalable Vector Graphics(*.svg);;All Files(*.*)");
+    QString filter = tr("Scalable Vector Graphics(*.svg)") + ";;";
+    filter += tr("All Files(*.*)");
+    QString selectedFilter;
+
+#ifdef QT_HAS_IOCOMPRESSOR
+    if (QtIOCompressor::isGzipSupported())
+        filter = tr("Compressed Scalable Vector Graphics(*.svgz)") + ";;" + filter;
+#endif
+
     QString newFile = QFileDialog::getSaveFileName(this,
                                                    title,
                                                    proposedFile,
-                                                   filter);
-
+                                                   filter,
+                                                   &selectedFilter);
     if (newFile.isEmpty()) // save aborted?
         return false;
+
     if (QFile::exists(newFile)) // files does exist?
         QFile::remove(newFile); // ... remove it, otherwise ::copy will fail
-    bool copied = QFile::copy(m_file, newFile);
-    if (!copied) // copy failed?
+    bool success = false;
+#ifdef QT_HAS_IOCOMPRESSOR
+    if (QtIOCompressor::isGzipSupported() &&
+            (selectedFilter == tr("Compressed Scalable Vector Graphics(*.svgz)"))) {
+
+        QFile in(m_file);
+        in.open(QIODevice::ReadOnly);
+
+        QFile out(newFile);
+        QtIOCompressor compressor(&out);
+        compressor.setStreamFormat(QtIOCompressor::GzipFormat);
+        compressor.open(QIODevice::WriteOnly);
+        qint64 s = compressor.write(in.readAll());
+
+        success = (s == in.size());
+    } else
+#endif
+    success = QFile::copy(m_file, newFile);
+    if (!success) // copy or compression failed?
         statusBar()->showMessage(tr("Saving Failed!"), 5000);
     else
         setWindowModified(false); // removes trailing star in windowtitle
 
-    return copied;
+    return success;
 }
 
 #include "svgviewer.moc"

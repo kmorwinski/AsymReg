@@ -13,6 +13,10 @@ endif()
 
 # QT 4.8
 find_package(Qt4 4.8 COMPONENTS QtSvg REQUIRED)
+find_package(QtIOCompressor)
+if(QTIOCOMPRESSOR_FOUND)
+    add_definitions(-DQT_HAS_IOCOMPRESSOR)
+endif()
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
@@ -35,6 +39,7 @@ set(asymreg_SRCS
 # header files
 include_directories(
     ${QT_INCLUDES}
+    ${QTIOCOMPRESSOR_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
     ${DISLIN_PATH}
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -49,6 +54,7 @@ target_link_libraries(${PROJECT_NAME}
     ${QT_QTCORE_LIBRARY}
     ${QT_QTGUI_LIBRARY}
     ${QT_QTSVG_LIBRARY}
+    ${QTIOCOMPRESSOR_LIBRARY}
     ${DISLIN_LIB}
 )
 
@@ -56,6 +62,5 @@ target_link_libraries(${PROJECT_NAME}
 install(TARGETS asymreg RUNTIME DESTINATION bin)
 
 # dummy project for additional files to show up in project tree
-
 file(GLOB DATA_FILES "${PROJECT_SOURCE_DIR}/data/*.csv")
 add_custom_target(${PROJECT_NAME}-dummy SOURCES ${DATA_FILES})
