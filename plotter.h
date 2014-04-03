@@ -9,13 +9,11 @@
 class Plotter {
 public:
     enum OutputType {
-        Display_Widget,
-        SVG_Image
+        Output_Display_Widget,
+        Output_SVG_Image
     };
 
-    typedef std::tuple<double, double> Span;
-
-    Plotter(const PlotterSettings &settings, OutputType = SVG_Image);
+    Plotter(const PlotterSettings &settings, OutputType = Output_SVG_Image);
     ~Plotter();
 
     void plot();
@@ -25,8 +23,10 @@ protected:
     PlotterSettings m_settings;
 
 private:
-    void setOutput(OutputType out);
-    void setSize(int height, int width);
+    void setFont();
+    void setOutput();
+    void setPage();
+    void setSize();
 
     OutputType m_outputType;
     bool m_plotted;
@@ -35,7 +35,7 @@ private:
 class ContourPlotter : public Plotter
 {
 public:
-    ContourPlotter(const PlotterSettings &settings, OutputType out = SVG_Image);
+    ContourPlotter(const PlotterSettings &settings, OutputType out = Output_SVG_Image);
 
     void setData(const Eigen::MatrixXd &zMat);
     void setData(const double *zmat, int xSteps, int ySteps);

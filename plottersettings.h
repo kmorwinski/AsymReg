@@ -8,16 +8,16 @@
 class PlotterSettings
 {
 public:
-    enum OutputType {
-        Display_Widget,
-        SVG_Image
+    enum PageType {
+        Page_DIN_A4_Landscape,
+        Page_DIN_A4_Portrait
     };
 
-    enum {
-        StandardHeight = 603, /**< @see http://www2.mps.mpg.de/dislin/kap6.html#WINSIZ */
-        StandardWidth = 853, /**< @see http://www2.mps.mpg.de/dislin/kap6.html#WINSIZ */
-        MaximumHeight = 904,
-        MaximumWidth = 1280
+    enum ImageDimension {
+        ImageStandardHeight = 603, /**< @see http://www2.mps.mpg.de/dislin/kap6.html#WINSIZ */
+        ImageStandardWidth = 853, /**< @see http://www2.mps.mpg.de/dislin/kap6.html#WINSIZ */
+        ImageMaximumHeight = 904,
+        ImageMaximumWidth = 1280
     };
 
     enum Axis {
@@ -29,6 +29,7 @@ public:
     typedef QPair<double, double> Span;
 
     PlotterSettings();
+    virtual ~PlotterSettings();
 
     int axis() const;
 
@@ -44,23 +45,39 @@ public:
     QList<Span> axisSpans() const;
     void setAxisSpans(const QList<Span> &axisSpans);
 
+    QString font() const;
+    int fontIndex() const;
+    static QStringList fonts();
+    void setFont(const QString &font);
+    void setFontIndex(int fontIndex);
+
+    QPair<int, int> imageSize() const;
+    void setImageSize(const QPair<int, int> &imageSize);
+
     QString title(int n) const;
     void setTitle(const QString &title, int n);
 
     QStringList titles() const;
     void setTitles(const QStringList &titles);
 
-    QPair<int, int> imageSize() const;
-    void setImageSize(const QPair<int, int> &imageSize);
+    PageType page() const;
+    void setPage(PageType page);
+
+    bool pageBorder() const;
+    void setPageBorder(bool border);
 
 protected:
     int m_axis; // set by dervived class!
 
 private:
-    QStringList m_axisTitles;
+    PageType m_page;
     QList<QPair<double, double> > m_axisSpans;
+    QStringList m_axisTitles;
     QStringList m_titles;
     QPair<int, int> m_imageSize;
+
+    bool m_pageBorder;
+    int m_fontIndex;
 };
 
 class ContourPlotterSettings : public PlotterSettings
