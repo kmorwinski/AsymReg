@@ -3,6 +3,7 @@
 
 #include <QtGui/QMainWindow>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QPointer>
 
 class QFileSystemWatcher;
@@ -29,6 +30,7 @@ private:
     ContourPlotterSettings *m_pressureFunctionPlotSettings;
     QAction *m_confNplotPressFuncAction;
     QAction *m_plotPressFuncAction;
+    QDateTime m_plotTime;
     QFileSystemWatcher *m_plotWatcher;
     QList<QPointer<SvgViewer> > m_svgViewerList;
 };

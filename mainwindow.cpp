@@ -5,9 +5,10 @@
 
 #include <QtGui/QAction>
 #include <QtGui/QCloseEvent>
+#include <QtGui/QIcon>
 #include <QtGui/QMenu>
-#include <QtGui/QMenuBar>
 #include <QtGui/QPushButton>
+#include <QtGui/QToolBar>
 #include <QtGui/QVBoxLayout>
 
 #include <chrono>
@@ -23,22 +24,28 @@
 using namespace std;
 using namespace Eigen;
 
-static double xray[101];
-static double yray[101];
-static double zheight[101][101];
-
 static BilinearInterpol *func = nullptr;
 
 MainWindow::MainWindow()
-    : m_pressureFunctionPlotSettings(nullptr)
+    : m_pressureFunctionPlotSettings(nullptr),
+      m_plotTime(QDateTime::currentDateTime())
 {
-    QAction* a = new QAction(this);
-    a->setText(tr("Quit"));
-    connect(a, SIGNAL(triggered()), SLOT(close()) );
-    menuBar()->addMenu(tr("File"))->addAction( a );
+    QAction *quitAction = new QAction(this);
+    quitAction->setText(tr("&Quit"));
+    quitAction->setIcon(QIcon::fromTheme("application-exit"));
+    quitAction->setShortcut(Qt::Key_Escape);
+    connect(quitAction, SIGNAL(triggered()),
+            this, SLOT(close()));
+
+    QToolBar *toolBar = new QToolBar;
+    toolBar->addAction(quitAction);
+    toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolBar->setMovable(false);
+    addToolBar(Qt::TopToolBarArea, toolBar);
 
     QPushButton *runAsymRegButton = new QPushButton;
     runAsymRegButton->setText(tr("Run Math"));
+    runAsymRegButton->setDefault(true);
     connect(runAsymRegButton, SIGNAL(clicked(bool)),
             this, SLOT(runAsymReg()));
 
@@ -136,7 +143,7 @@ void MainWindow::plotPressureFunction(QAction *action)
         m_pressureFunctionPlotSettings = sett;
     }
 
-    int steps = 200;
+    int steps = 50;
     VectorXd X, Y;
     X.setLinSpaced(steps, 0., 10.);
     Y = X;
@@ -148,11 +155,7 @@ void MainWindow::plotPressureFunction(QAction *action)
             Z(i,j) = func->interpol(X(i),Y(j));
     }
 
-    m_pressureFunctionPlotSettings->setTitle("hier koennte ihr Titel stehen", 3);
-    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::X_Axis);
-    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(0., 10.), PlotterSettings::Y_Axis);
-    m_pressureFunctionPlotSettings->setAxisSpan(PlotterSettings::Span(-3., 3.), PlotterSettings::Z_Axis);
-    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::SVG_Image);
+    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(Z);
 }
 
@@ -183,10 +186,18 @@ void MainWindow::showSvgViewer(const QString &path)
     QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"}; // TODO: add more image types
     QStringList images = QDir(path).entryList(nameFilters, QDir::Files, QDir::Time);
 
+    auto it = images.constBegin();
+    while (it != images.constEnd()) {
+        if (QFileInfo(*it).lastModified() <= m_plotTime)
+            break;
+
+        SvgViewer *svgViewer = new SvgViewer(*it++, "a simple image");
+        m_svgViewerList << svgViewer;
+        svgViewer->show();
+    }
+
     // assume top entry in images-list is the one that was output by dislin:
-    SvgViewer *svgViewer = new SvgViewer("../data/err2.svg"/*images.at(0)*/, "a simple image");
-    m_svgViewerList << svgViewer;
-    svgViewer->show();
+    m_plotTime = QDateTime::currentDateTime();
 }
 
 #include "mainwindow.moc"
