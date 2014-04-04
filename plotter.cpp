@@ -1,8 +1,10 @@
 #include "plotter.h"
 
+#include "plottersettings.h"
+
 using namespace Eigen;
 
-ContourPlotter::ContourPlotter(const PlotterSettings &settings, OutputType out)
+ContourPlotter::ContourPlotter(const PlotterSettings *settings, OutputType out)
     : Plotter(settings, out)
 {
     // AXSPOS determines the position of an axis system.
@@ -52,15 +54,14 @@ void ContourPlotter::setData(const double *zmatz, int xSteps, int ySteps)
     // YOR, YSTP: are the first Y-axis label and the step between labels.
     // ZA, ZE: are the lower and upper limits of the Z-axis.
     // ZOR, ZSTP: are the first Z-axis label and the step between labels.
-    auto spans = m_settings.axisSpans();
-    auto xa = spans.at(PlotterSettings::X_Axis).first,
-         xe = spans.at(PlotterSettings::X_Axis).second,
+    auto xa = m_settings->axisSpan(PlotterSettings::X_Axis).from,
+         xe = m_settings->axisSpan(PlotterSettings::X_Axis).to,
          xstp = (xe - xa)/4.;
-    auto ya = spans.at(PlotterSettings::Y_Axis).first,
-         ye = spans.at(PlotterSettings::Y_Axis).second,
+    auto ya = m_settings->axisSpan(PlotterSettings::Y_Axis).from,
+         ye = m_settings->axisSpan(PlotterSettings::Y_Axis).to,
          ystp = (ye - ya)/4.;
-    auto za = spans.at(PlotterSettings::Z_Axis).first,
-         ze = spans.at(PlotterSettings::Z_Axis).second,
+    auto za = m_settings->axisSpan(PlotterSettings::Z_Axis).from,
+         ze = m_settings->axisSpan(PlotterSettings::Z_Axis).to,
          zstp =  (ze - za)/4.;
     m_dislin.graf3(xa, xe, xa, xstp,
                    ya, ye, ya, ystp,
@@ -69,11 +70,13 @@ void ContourPlotter::setData(const double *zmatz, int xSteps, int ySteps)
     m_dislin.crvmat(zmatz, xSteps, ySteps, 1, 1);
 }
 
-Plotter::Plotter(const PlotterSettings &settings, OutputType out)
+Plotter::Plotter(const PlotterSettings *settings, OutputType out)
     : m_outputType(out),
       m_settings(settings),
       m_plotted(false)
 {
+    Q_ASSERT(settings != nullptr);
+
     m_dislin.reset("ALL");
 
     setSize();
@@ -83,14 +86,14 @@ Plotter::Plotter(const PlotterSettings &settings, OutputType out)
     m_dislin.scrmod("revers");
     m_dislin.disini(); // initialiaze
 
-    if (m_settings.pageBorder())
+    if (m_settings->pageBorder())
         m_dislin.pagera(); // PAGERA plots a border around the page.
 
     setFont();
 
     // set axis titles:
-    QStringList axisTitles = m_settings.axisTitles();
-    int axis = m_settings.axis();
+    QStringList axisTitles = m_settings->axisTitles();
+    int axis = m_settings->axis();
     if ((1 <= axis) && !axisTitles.at(PlotterSettings::X_Axis).isEmpty())
         m_dislin.name(axisTitles.at(PlotterSettings::X_Axis).toAscii().data(), "x");
 
@@ -109,7 +112,7 @@ Plotter::~Plotter()
 
 void Plotter::plot()
 {
-    QStringList titles = m_settings.titles();
+    QStringList titles = m_settings->titles();
     for (int i = 1; i <= 4; ++i) {
         const char *c = titles.at(i-1).toAscii().data();
         if (*c)
@@ -124,14 +127,14 @@ void Plotter::plot()
 
 void Plotter::setFont()
 {
-    QString font = m_settings.font();
+    QString font = m_settings->font();
     m_dislin.psfont(font.toAscii().data());
 }
 
 void Plotter::setSize()
 {
-    int height = m_settings.imageSize().first;
-    int width = m_settings.imageSize().second;
+    int height = m_settings->imageSize().height();
+    int width = m_settings->imageSize().width();
 
     switch (m_outputType) {
     case Output_Display_Widget:
@@ -158,7 +161,7 @@ void Plotter::setOutput()
 
 void Plotter::setPage()
 {
-    switch (m_settings.page()) {
+    switch (m_settings->page()) {
     case PlotterSettings::Page_DIN_A4_Landscape:
         m_dislin.setpag("DA4L");
         break;

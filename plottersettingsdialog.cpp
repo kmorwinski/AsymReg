@@ -73,6 +73,11 @@ void PlotterSettingsDialog::accept()
     QDialog::accept();
 }
 
+PlotterSettings *PlotterSettingsDialog::getPlotterSettings() const
+{
+    return m_settings;
+}
+
 /**
  * @brief Load Values from m_settings.
  */
@@ -84,21 +89,21 @@ void PlotterSettingsDialog::loadValues()
 
     // Axis Labels & Spans:
     int axis = m_settings->axis();
+    QStringList axisTitles = m_settings->axisTitles();
     for (int i = 0; i < 3; ++i) {
         m_axisTitles[i]->setHidden(i >= axis);
-        m_axisTitles[i]->setText(m_settings->axisTitle(
-                                     static_cast<PlotterSettings::Axis>(i)));
+        m_axisTitles[i]->setText(axisTitles.at(i));
         m_axisGroupBoxes[i]->setHidden(i >= axis);
     }
 
-    m_xSpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::X_Axis).first);
-    m_xSpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::X_Axis).second);
+    m_xSpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::X_Axis).from);
+    m_xSpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::X_Axis).to);
 
-    m_ySpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::Y_Axis).first);
-    m_ySpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::Y_Axis).second);
+    m_ySpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::Y_Axis).from);
+    m_ySpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::Y_Axis).to);
 
-    m_zSpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::Z_Axis).first);
-    m_zSpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::Z_Axis).second);
+    m_zSpinBoxes[0]->setValue(m_settings->axisSpan(PlotterSettings::Z_Axis).from);
+    m_zSpinBoxes[1]->setValue(m_settings->axisSpan(PlotterSettings::Z_Axis).to);
 
     // Page & Image Dimensions:
     m_pageComboBox->blockSignals(true);
@@ -108,11 +113,11 @@ void PlotterSettingsDialog::loadValues()
     m_pageComboBox->setCurrentIndex(pageIndex);
     m_pageComboBox->blockSignals(false);
 
-    auto size = m_settings->imageSize();
-    m_heightSpinBox->setValue(size.first);
-    m_widthSpinBox->setValue(size.second);
-    if ((size.first == PlotterSettings::ImageStandardHeight) &&
-            (size.second == PlotterSettings::ImageStandardWidth) &&
+    QSize size = m_settings->imageSize();
+    m_heightSpinBox->setValue(size.height());
+    m_widthSpinBox->setValue(size.width());
+    if ((size.height() == PlotterSettings::ImageStandardHeight) &&
+            (size.width() == PlotterSettings::ImageStandardWidth) &&
             (m_pageComboBox->currentText().endsWith("Portrait"))) {
 
         swapImageDimension();
@@ -162,28 +167,28 @@ void PlotterSettingsDialog::saveValues()
         m_settings->setTitle(m_titleLines[i]->text(), i + 1);
 
     // Axis Labels & Spans:
+    QStringList axisTitles = m_settings->axisTitles();
     for (int i = 0; i < 3; ++i) {
-        if (!m_axisTitles[i]->isHidden()) {
-            m_settings->setAxisTitle(m_axisTitles[i]->text(),
-                                     static_cast<PlotterSettings::Axis>(i));
-        }
+        if (!m_axisTitles[i]->isHidden())
+            axisTitles[i] = m_axisTitles[i]->text();
     }
+    m_settings->setAxisTitles(axisTitles);
 
     if (!m_axisGroupBoxes[0]->isHidden()) {
-        PlotterSettings::Span xSpan = qMakePair(m_xSpinBoxes[0]->value(),
-                                                m_xSpinBoxes[1]->value());
+        PlotterSettings::Span xSpan = {m_xSpinBoxes[0]->value(),
+                                       m_xSpinBoxes[1]->value()};
         m_settings->setAxisSpan(xSpan, PlotterSettings::X_Axis);
     }
 
     if (!m_axisGroupBoxes[1]->isHidden()) {
-        PlotterSettings::Span ySpan = qMakePair(m_ySpinBoxes[0]->value(),
-                                                m_ySpinBoxes[1]->value());
+        PlotterSettings::Span ySpan = {m_ySpinBoxes[0]->value(),
+                                       m_ySpinBoxes[1]->value()};
         m_settings->setAxisSpan(ySpan, PlotterSettings::Y_Axis);
     }
 
     if (!m_axisGroupBoxes[2]->isHidden()) {
-        PlotterSettings::Span zSpan = qMakePair(m_zSpinBoxes[0]->value(),
-                                                m_zSpinBoxes[1]->value());
+        PlotterSettings::Span zSpan = {m_zSpinBoxes[0]->value(),
+                                       m_zSpinBoxes[1]->value()};
         m_settings->setAxisSpan(zSpan, PlotterSettings::Z_Axis);
     }
 
@@ -193,7 +198,7 @@ void PlotterSettingsDialog::saveValues()
 
     auto h = m_heightSpinBox->value();
     auto w = m_widthSpinBox->value();
-    m_settings->setImageSize(qMakePair(h, w));
+    m_settings->setImageSize(QSize(h, w));
 
     // Additional Options:
     m_settings->setFontIndex(m_fontComboBox->currentIndex());

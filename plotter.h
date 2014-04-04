@@ -4,7 +4,8 @@
 #include <discpp.h>
 
 #include "eigen.h"
-#include "plottersettings.h"
+
+class PlotterSettings;
 
 class Plotter {
 public:
@@ -13,14 +14,14 @@ public:
         Output_SVG_Image
     };
 
-    Plotter(const PlotterSettings &settings, OutputType = Output_SVG_Image);
+    Plotter(const PlotterSettings *settings, OutputType = Output_SVG_Image);
     ~Plotter();
 
     void plot();
 
 protected:
     Dislin m_dislin;
-    PlotterSettings m_settings;
+    const PlotterSettings *m_settings;
 
 private:
     void setFont();
@@ -35,7 +36,7 @@ private:
 class ContourPlotter : public Plotter
 {
 public:
-    ContourPlotter(const PlotterSettings &settings, OutputType out = Output_SVG_Image);
+    ContourPlotter(const PlotterSettings *settings, OutputType out = Output_SVG_Image);
 
     void setData(const Eigen::MatrixXd &zMat);
     void setData(const double *zmat, int xSteps, int ySteps);

@@ -1,12 +1,26 @@
 #ifndef PLOTTERSETTINGS_H_
 #define PLOTTERSETTINGS_H_
 
-#include <QString>
-#include <QStringList>
-#include <QPair>
+#include <QtCore/QSize>
+#include <QtCore/QString>
+#include <QtCore/QStringList>
 
-class PlotterSettings
+class PlotterSettings : public QObject
 {
+    Q_OBJECT
+
+    Q_PROPERTY(PageType page READ page WRITE setPage NOTIFY settingsChanged)
+    Q_PROPERTY(QMap xAxisSpan READ xAxisSpan WRITE setXaxisSpan NOTIFY settingsChanged)
+    Q_PROPERTY(QMap yAxisSpan READ yAxisSpan WRITE setYaxisSpan NOTIFY settingsChanged)
+    Q_PROPERTY(QMap zAxisSpan READ zAxisSpan WRITE setZaxisSpan NOTIFY settingsChanged)
+    Q_PROPERTY(QStringList axisTitles READ axisTitles WRITE setAxisTitles NOTIFY settingsChanged)
+    Q_PROPERTY(QStringList titles READ titles WRITE setTitles NOTIFY settingsChanged)
+    Q_PROPERTY(QMap imageSize READ imageSizeMap WRITE setImageSizeMap NOTIFY settingsChanged)
+    Q_PROPERTY(bool pageBorder READ pageBorder WRITE setPageBorder NOTIFY settingsChanged)
+    Q_PROPERTY(int font READ fontIndex WRITE setFontIndex NOTIFY settingsChanged)
+
+    Q_ENUMS(PageType)
+
 public:
     enum PageType {
         Page_DIN_A4_Landscape,
@@ -26,15 +40,14 @@ public:
         Z_Axis = 2
     };
 
-    typedef QPair<double, double> Span;
+    struct Span {
+        double from;
+        double to;
+    };
 
     PlotterSettings();
-    virtual ~PlotterSettings();
 
     int axis() const;
-
-    QString axisTitle(Axis axis) const;
-    void setAxisTitle(const QString &axisTitle, Axis axis);
 
     QStringList axisTitles() const;
     void setAxisTitles(const QStringList &axisTitles);
@@ -42,17 +55,14 @@ public:
     Span axisSpan(Axis axis) const;
     void setAxisSpan(const Span &axisSpan, Axis axis);
 
-    QList<Span> axisSpans() const;
-    void setAxisSpans(const QList<Span> &axisSpans);
-
     QString font() const;
-    int fontIndex() const;
     static QStringList fonts();
-    void setFont(const QString &font);
+
+    int fontIndex() const;
     void setFontIndex(int fontIndex);
 
-    QPair<int, int> imageSize() const;
-    void setImageSize(const QPair<int, int> &imageSize);
+    QSize imageSize() const;
+    void setImageSize(const QSize &imageSize);
 
     QString title(int n) const;
     void setTitle(const QString &title, int n);
@@ -66,18 +76,34 @@ public:
     bool pageBorder() const;
     void setPageBorder(bool border);
 
+    // only for QJson/Q_PROPERTY:
+    QMap<QString, QVariant> imageSizeMap() const;
+    void setImageSizeMap(const QMap<QString, QVariant> &imageSize);
+
+    QMap<QString, QVariant> xAxisSpan() const;
+    void setXaxisSpan(const QMap<QString, QVariant> &axisSpan);
+
+    QMap<QString, QVariant> yAxisSpan() const;
+    void setYaxisSpan(const QMap<QString, QVariant> &axisSpan);
+
+    QMap<QString, QVariant> zAxisSpan() const;
+    void setZaxisSpan(const QMap<QString, QVariant>  &axisSpan);
+
 protected:
     int m_axis; // set by dervived class!
 
 private:
     PageType m_page;
-    QList<QPair<double, double> > m_axisSpans;
+    QList<Span> m_axisSpans;
     QStringList m_axisTitles;
     QStringList m_titles;
-    QPair<int, int> m_imageSize;
+    QSize m_imageSize;
 
     bool m_pageBorder;
     int m_fontIndex;
+
+signals:
+    void settingsChanged();
 };
 
 class ContourPlotterSettings : public PlotterSettings

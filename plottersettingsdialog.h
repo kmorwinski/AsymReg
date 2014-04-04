@@ -18,6 +18,7 @@ class PlotterSettingsDialog : public QDialog
 public:
     PlotterSettingsDialog(QWidget *parent = 0, Qt::WindowFlags f = 0);
 
+    PlotterSettings *getPlotterSettings() const;
     void setPlotterSettings(PlotterSettings *settings);
 
 public slots:

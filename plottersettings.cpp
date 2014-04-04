@@ -1,18 +1,24 @@
 #include "plottersettings.h"
 
+#include <QtCore/QMap>
+#include <QtCore/QVariant>
+
 ContourPlotterSettings::ContourPlotterSettings()
     : PlotterSettings()
 {
     m_axis = 3;
-    QList<Span> s = {qMakePair(0.,10.), qMakePair(0.,10.), qMakePair(-5.,5.)};
-    setAxisSpans(s);
+
+    setAxisSpan({0., 10.}, X_Axis);
+    setAxisSpan({0., 10.}, Y_Axis);
+    setAxisSpan({-5., 5.}, Z_Axis);
 
     setTitle("contour plot", 1);
 }
 
 PlotterSettings::PlotterSettings()
-    : m_page(Page_DIN_A4_Portrait),
-      m_axisSpans({qMakePair(0.,0.), qMakePair(0.,0.), qMakePair(0.,0.)}), // invalid axis spans
+    : QObject(),
+      m_page(Page_DIN_A4_Landscape),
+      m_axisSpans({{0.,0.}, {0.,0.}, {0.,0.}}), // invalid axis spans
       m_axisTitles({"X axis", "Y axis", "Z axis"}),
       m_titles({"", "", "", ""}),
       m_imageSize(ImageStandardHeight, ImageStandardWidth),
@@ -21,27 +27,19 @@ PlotterSettings::PlotterSettings()
       m_axis(0)
 {}
 
-PlotterSettings::~PlotterSettings()
-{}
-
 int PlotterSettings::axis() const
 {
     return m_axis;
 }
 
-QString PlotterSettings::axisTitle(Axis axis) const
+PlotterSettings::Span PlotterSettings::axisSpan(PlotterSettings::Axis axis) const
 {
-    return m_axisTitles.at(axis);
+    return m_axisSpans.at(axis);
 }
 
 QStringList PlotterSettings::axisTitles() const
 {
     return m_axisTitles;
-}
-
-QList<PlotterSettings::Span> PlotterSettings::axisSpans() const
-{
-    return m_axisSpans;
 }
 
 QString PlotterSettings::font() const
@@ -80,11 +78,19 @@ QStringList PlotterSettings::fonts()
     return ret;
 }
 
-QPair<int, int> PlotterSettings::imageSize() const
+QMap<QString, QVariant> PlotterSettings::imageSizeMap() const
+{
+    QMap<QString, QVariant> ret;
+    ret["height"] = QVariant::fromValue(m_imageSize.height());
+    ret["width"] = QVariant::fromValue(m_imageSize.width());
+
+    return ret;
+}
+
+QSize PlotterSettings::imageSize() const
 {
     return m_imageSize;
 }
-
 
 PlotterSettings::PageType PlotterSettings::page() const
 {
@@ -96,37 +102,14 @@ bool PlotterSettings::pageBorder() const
     return m_pageBorder;
 }
 
-void PlotterSettings::setAxisTitle(const QString &axisTitle, Axis axis)
-{
-    m_axisTitles[axis] = axisTitle;
-}
-
 void PlotterSettings::setAxisTitles(const QStringList &axisTitles)
 {
     m_axisTitles = axisTitles;
 }
 
-PlotterSettings::Span PlotterSettings::axisSpan(PlotterSettings::Axis axis) const
-{
-    return m_axisSpans.at(axis);
-}
-
-void PlotterSettings::setAxisSpan(const QPair<double, double> &axisSpan, Axis axis)
+void PlotterSettings::setAxisSpan(const PlotterSettings::Span &axisSpan, Axis axis)
 {
     m_axisSpans[axis] = axisSpan;
-}
-
-void PlotterSettings::setAxisSpans(const QList<Span> &axisSpans)
-{
-    m_axisSpans = axisSpans;
-}
-
-void PlotterSettings::setFont(const QString &font)
-{
-    QStringList fontList = fonts();
-    int index = fontList.indexOf(font);
-    if (index != -1)
-        m_fontIndex = index;
 }
 
 void PlotterSettings::setFontIndex(int fontIndex)
@@ -134,7 +117,13 @@ void PlotterSettings::setFontIndex(int fontIndex)
     m_fontIndex = fontIndex;
 }
 
-void PlotterSettings::setImageSize(const QPair<int, int> &imageSize)
+void PlotterSettings::setImageSizeMap(const QMap<QString, QVariant> &imageSize)
+{
+    QSize s = QSize(imageSize["height"].toInt(), imageSize["width"].toInt());
+    m_imageSize = s;
+}
+
+void PlotterSettings::setImageSize(const QSize &imageSize)
 {
     m_imageSize = imageSize;
 }
@@ -161,6 +150,24 @@ void PlotterSettings::setTitles(const QStringList &titles)
     m_titles = titles;
 }
 
+void PlotterSettings::setXaxisSpan(const QMap<QString, QVariant> &axisSpan)
+{
+    Span s = {axisSpan["from"].toDouble(), axisSpan["to"].toDouble()};
+    setAxisSpan(s, X_Axis);
+}
+
+void PlotterSettings::setYaxisSpan(const QMap<QString, QVariant> &axisSpan)
+{
+    Span s = {axisSpan["from"].toDouble(), axisSpan["to"].toDouble()};
+    setAxisSpan(s, Y_Axis);
+}
+
+void PlotterSettings::setZaxisSpan(const QMap<QString, QVariant> &axisSpan)
+{
+    Span s = {axisSpan["from"].toDouble(), axisSpan["to"].toDouble()};
+    setAxisSpan(s, Z_Axis);
+}
+
 QString PlotterSettings::title(int n) const
 {
     Q_ASSERT(n <= 4);
@@ -172,3 +179,38 @@ QStringList PlotterSettings::titles() const
 {
     return m_titles;
 }
+
+QMap<QString, QVariant> PlotterSettings::xAxisSpan() const
+{
+    QMap<QString, QVariant> ret;
+
+    Span span = axisSpan(X_Axis);
+    ret["from"] = QVariant::fromValue(span.from);
+    ret["to"] = QVariant::fromValue(span.to);
+
+    return ret;
+}
+
+QMap<QString, QVariant> PlotterSettings::yAxisSpan() const
+{
+    QMap<QString, QVariant> ret;
+
+    Span span = axisSpan(Y_Axis);
+    ret["from"] = QVariant::fromValue(span.from);
+    ret["to"] = QVariant::fromValue(span.to);
+
+    return ret;
+}
+
+QMap<QString, QVariant> PlotterSettings::zAxisSpan() const
+{
+    QMap<QString, QVariant> ret;
+
+    Span span = axisSpan(Z_Axis);
+    ret["from"] = QVariant::fromValue(span.from);
+    ret["to"] = QVariant::fromValue(span.to);
+
+    return ret;
+}
+
+#include "plottersettings.moc"
