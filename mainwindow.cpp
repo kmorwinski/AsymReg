@@ -194,6 +194,11 @@ void MainWindow::runAsymReg()
     std::fstream fs;
     //fs.open("../data/data.csv", std::fstream::out | std::fstream::trunc);
     fs.open("../data/data.csv", std::fstream::in);
+    fs >> zMat;
+    fs.close();
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    func = new BilinearInterpol(xVec, yVec, zMat);
 }
 
 bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const
@@ -212,13 +217,6 @@ bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSetti
         f.write(dat);
 
     return ok;
-}
-
-    fs >> zMat;
-    fs.close();
-
-    auto t1 = std::chrono::high_resolution_clock::now();
-    func = new BilinearInterpol(xVec, yVec, zMat);
 }
 
 void MainWindow::showSvgViewer(const QString &path)
