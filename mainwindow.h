@@ -6,8 +6,8 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QPointer>
 
+class PlotterSettings;
 class QFileSystemWatcher;
-class ContourPlotterSettings;
 class SvgViewer;
 
 class MainWindow : public QMainWindow
@@ -27,7 +27,10 @@ private slots:
     void showSvgViewer(const QString &path);
 
 private:
-    ContourPlotterSettings *m_pressureFunctionPlotSettings;
+    bool loadPlotterSettings(const QString &fileName, PlotterSettings *sett) const;
+    bool savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const;
+
+    PlotterSettings *m_pressureFunctionPlotSettings;
     QAction *m_confNplotPressFuncAction;
     QAction *m_plotPressFuncAction;
     QDateTime m_plotTime;

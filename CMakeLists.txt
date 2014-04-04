@@ -17,6 +17,7 @@ find_package(QtIOCompressor)
 if(QTIOCOMPRESSOR_FOUND)
     add_definitions(-DQT_HAS_IOCOMPRESSOR)
 endif()
+find_package(QJSON 0.8.1 REQUIRED)
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
@@ -40,6 +41,7 @@ set(asymreg_SRCS
 include_directories(
     ${QT_INCLUDES}
     ${QTIOCOMPRESSOR_INCLUDE_DIR}
+    ${QJSON_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
     ${DISLIN_PATH}
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -55,6 +57,7 @@ target_link_libraries(${PROJECT_NAME}
     ${QT_QTGUI_LIBRARY}
     ${QT_QTSVG_LIBRARY}
     ${QTIOCOMPRESSOR_LIBRARY}
+    ${QJSON_LIBRARIES}
     ${DISLIN_LIB}
 )
 

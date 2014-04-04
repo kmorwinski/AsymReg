@@ -2,6 +2,8 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFileSystemWatcher>
+#include <QtCore/QVariant>
+#include <QtCore/QVariantMap>
 
 #include <QtGui/QAction>
 #include <QtGui/QCloseEvent>
@@ -11,6 +13,10 @@
 #include <QtGui/QToolBar>
 #include <QtGui/QVBoxLayout>
 
+#include <qjson/qobjecthelper.h>
+#include <qjson/parser.h>
+#include <qjson/serializer.h>
+
 #include <chrono>
 #include <iostream>
 #include <fstream>
@@ -18,6 +24,7 @@
 #include "eigen.h"
 #include "interpol.h"
 #include "plotter.h"
+#include "plottersettings.h"
 #include "plottersettingsdialog.h"
 #include "svgviewer.h"
 
@@ -116,6 +123,22 @@ void MainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
+bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *sett) const
+{
+    QFile f(fileName);
+    f.open(QIODevice::ReadOnly);
+    if (!f.isOpen())
+        return false;
+
+    bool ok;
+    QJson::Parser par;
+    QVariant var = par.parse(&f, &ok);
+    if (ok)
+        QJson::QObjectHelper::qvariant2qobject(var.toMap(), sett);
+
+    return ok;
+}
+
 void MainWindow::plotPressureFunction(QAction *action)
 {
     if (func == nullptr)
@@ -132,18 +155,17 @@ void MainWindow::plotPressureFunction(QAction *action)
         needConfigDialog = true;
 
     if (needConfigDialog) {
-        ContourPlotterSettings *sett = new ContourPlotterSettings(*m_pressureFunctionPlotSettings);
         PlotterSettingsDialog dialog(this);
-        dialog.setPlotterSettings(sett);
+        dialog.setPlotterSettings(m_pressureFunctionPlotSettings);
         auto ret = dialog.exec();
         if (ret == QDialog::Rejected)
             return;
 
-        delete m_pressureFunctionPlotSettings;
-        m_pressureFunctionPlotSettings = sett;
+        m_pressureFunctionPlotSettings =
+                dynamic_cast<ContourPlotterSettings *>(dialog.getPlotterSettings());
     }
 
-    int steps = 50;
+    int steps = 200;
     VectorXd X, Y;
     X.setLinSpaced(steps, 0., 10.);
     Y = X;
@@ -155,7 +177,7 @@ void MainWindow::plotPressureFunction(QAction *action)
             Z(i,j) = func->interpol(X(i),Y(j));
     }
 
-    ContourPlotter plotter(*m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
+    ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(Z);
 }
 
@@ -172,6 +194,26 @@ void MainWindow::runAsymReg()
     std::fstream fs;
     //fs.open("../data/data.csv", std::fstream::out | std::fstream::trunc);
     fs.open("../data/data.csv", std::fstream::in);
+}
+
+bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const
+{
+    QFile f(fileName);
+    f.open(QIODevice::WriteOnly | QIODevice::Truncate);
+    if (!f.isOpen())
+        return false;
+
+    QVariantMap variantMap = QJson::QObjectHelper::qobject2qvariant(sett);
+    bool ok;
+    QJson::Serializer ser;
+    ser.setIndentMode(QJson::IndentFull);
+    QByteArray dat = ser.serialize(variantMap, &ok);
+    if (ok)
+        f.write(dat);
+
+    return ok;
+}
+
     fs >> zMat;
     fs.close();
 
