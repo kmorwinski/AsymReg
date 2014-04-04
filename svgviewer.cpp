@@ -113,6 +113,7 @@ void SvgViewer::closeEvent(QCloseEvent *event)
         msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard |
                                   QMessageBox::Cancel);
         msgBox.setDefaultButton(QMessageBox::Save);
+        msgBox.setIcon(QMessageBox::Warning);
 
         // show dialog and evaluate answer:
         auto ret = msgBox.exec();
