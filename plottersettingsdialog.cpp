@@ -198,7 +198,7 @@ void PlotterSettingsDialog::saveValues()
 
     auto h = m_heightSpinBox->value();
     auto w = m_widthSpinBox->value();
-    m_settings->setImageSize(QSize(h, w));
+    m_settings->setImageSize(QSize(w, h));
 
     // Additional Options:
     m_settings->setFontIndex(m_fontComboBox->currentIndex());

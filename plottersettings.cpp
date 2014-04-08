@@ -21,7 +21,7 @@ PlotterSettings::PlotterSettings()
       m_axisSpans({{0.,0.}, {0.,0.}, {0.,0.}}), // invalid axis spans
       m_axisTitles({"X axis", "Y axis", "Z axis"}),
       m_titles({"", "", "", ""}),
-      m_imageSize(ImageStandardHeight, ImageStandardWidth),
+      m_imageSize(ImageStandardWidth, ImageStandardHeight),
       m_pageBorder(false),
       m_fontIndex(32), // Times Roman
       m_axis(0)
