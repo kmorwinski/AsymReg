@@ -37,6 +37,11 @@
 #include "plottersettingsdialog.h"
 #include "svgviewer.h"
 
+// some string we need to seach throughout different places:
+#define MW_DATSRC_STR_CLEAR   "Clear List"
+#define MW_DATSRC_STR_EMPTY   "Empty"
+#define MW_DATSRC_STR_SELECT  "Select &New File"
+
 using namespace std;
 using namespace Eigen;
 
@@ -46,7 +51,13 @@ MatrixXd zMat;
 
 static bool qaction_lessThan(QAction *ac1, QAction *ac2)
 {
-    return (ac1->text() <= ac2->text());
+    bool ac1IsFile = ac1->isCheckable();
+    bool ac2IsFile = ac2->isCheckable();
+
+    if (ac1IsFile == ac2IsFile)
+        return (ac1->text() <= ac2->text());
+
+    return (ac1IsFile && !ac2IsFile);
 }
 
 MainWindow::MainWindow()
@@ -87,18 +98,24 @@ MainWindow::MainWindow()
             this, SLOT(dataSourceChanged(QTableWidgetItem*)));
 
     QAction *emptyFile = new QAction(this);
-    emptyFile->setText(tr("Empty"));
+    emptyFile->setText(tr(MW_DATSRC_STR_EMPTY));
     emptyFile->setCheckable(true);
     emptyFile->setChecked(true);
     emptyFile->setEnabled(false);
 
+    QAction *clearList = new QAction(this);
+    clearList->setText(tr(MW_DATSRC_STR_CLEAR));
+    clearList->setToolTip(tr("Closes the selected data source and clears the list of possible files."));
+    clearList->setIcon(QIcon::fromTheme("edit-clear"));
+
     QAction *selectFile = new QAction(this);
-    selectFile->setText(tr("Select File"));
+    selectFile->setText(tr(MW_DATSRC_STR_SELECT));
     selectFile->setToolTip(tr("Opens a filedialog to select a new source-file."));
     selectFile->setIcon(QIcon::fromTheme("document-open"));
 
     m_dataSourceSelectGroup = new QActionGroup(this);
     m_dataSourceSelectGroup->addAction(emptyFile);
+    m_dataSourceSelectGroup->addAction(clearList);
     m_dataSourceSelectGroup->addAction(selectFile);
     connect(m_dataSourceSelectGroup, SIGNAL(selected(QAction*)),
             this, SLOT(selectDataSource(QAction*)));
@@ -191,9 +208,14 @@ QAction *MainWindow::addDataSourceAction(const QString &fileName)
 {
     // remove "empty" action:
     QList<QAction *> list = m_dataSourceSelectGroup->actions();
-    if ((list.size() == 2) && (list.at(0)->text() == tr("Empty"))) {
-        QAction *empty = list.takeAt(0);
-        delete empty;
+    if (list.size() == 3) { // "Empty", "Select New File" and "Clear List"
+        for (int i = 0; i < 3; ++i) {
+            if (list.at(i)->text() == tr(MW_DATSRC_STR_EMPTY)) {
+                QAction *empty = list.takeAt(i);
+                delete empty;
+                break;
+            }
+        }
     }
 
     // create new QAction:
@@ -211,7 +233,7 @@ QAction *MainWindow::addDataSourceAction(const QString &fileName)
     QMenu *menu = m_dataSourceSelectButton->menu();
     menu->clear(); // deletes separator, but keeps select-file-action
     menu->addActions(list);
-    menu->insertSeparator(list.at(list.size()-1));
+    menu->insertSeparator(list.at(list.size()-2));
 
     return newDataSourceAction;
 }
@@ -463,7 +485,7 @@ void MainWindow::selectDataSource(QAction *action)
     if (isWindowModified() && m_dataSourceChanged) {
         QString file;
         if (lastSelectedAction == nullptr)
-            file = tr("Empty");
+            file = tr(MW_DATSRC_STR_EMPTY);
         else
             file = lastSelectedAction->text();
         int answer = askToSaveDataSource(file);
@@ -479,7 +501,7 @@ void MainWindow::selectDataSource(QAction *action)
     QString fileName;
     if (action->isCheckable())
         fileName = action->text();
-    else { // Select Data Source
+    else if (action->text() == tr(MW_DATSRC_STR_SELECT)) { // Select New File
         QString title = tr("Load File - %1").arg(qApp->applicationName());
         QString proposedFile = QDir("../data").canonicalPath();
         QString filter =  tr("CSV Files(*.csv)");
@@ -492,17 +514,36 @@ void MainWindow::selectDataSource(QAction *action)
             return;
 
         action = addDataSourceAction(fileName);
+    } else { // Clear List
+        Q_ASSERT(action->text() == tr(MW_DATSRC_STR_CLEAR)); // assert if not "Clear List"-Action
+
+        // delete all file-actions:
+        // QActionGroup takes care of the rest, so we use a
+        // const-iterator
+        QList<QAction *> all = m_dataSourceSelectGroup->actions();
+        auto it = all.constBegin();
+        do {
+            if ((*it)->isCheckable())
+                delete *it;
+        } while (++it != all.constEnd());
+
+        action = addDataSourceAction(tr(MW_DATSRC_STR_EMPTY));
+        action->setEnabled(false); // Empty is greyed out and not clickable
+        action = nullptr; // need nullptr for saving-changed-data logic
     }
 
     // save for later use:
     lastSelectedAction = action;
 
     // read data to zMat
-    std::fstream fs;
-    fs.open(fileName.toAscii().data(), std::fstream::in);
-    Q_ASSERT(fs.is_open());
-    fs >> zMat;
-    fs.close();
+    if (!fileName.isEmpty()) {
+        std::fstream fs;
+        fs.open(fileName.toAscii().data(), std::fstream::in);
+        Q_ASSERT(fs.is_open());
+        fs >> zMat;
+        fs.close();
+    } else
+        zMat.setZero();
 
     // update TableWidget:
     loadDataSourceToTableWidget();
