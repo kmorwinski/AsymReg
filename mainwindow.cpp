@@ -43,6 +43,8 @@
 #define MW_DATSRC_STR_EMPTY   "Empty"
 #define MW_DATSRC_STR_SELECT  "Select &New File"
 
+#define MW_PLTCFG_FILE  "../data/plotconfig.json"
+
 using namespace std;
 using namespace Eigen;
 
@@ -63,6 +65,7 @@ static bool qaction_lessThan(QAction *ac1, QAction *ac2)
 
 MainWindow::MainWindow()
     : m_pressureFunctionPlotSettings(nullptr),
+      m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
       m_dataSourceChanged(false)
 {
@@ -123,7 +126,7 @@ MainWindow::MainWindow()
 
     QMenu *dataSourceSelectMenu = new QMenu;
     dataSourceSelectMenu->addActions(m_dataSourceSelectGroup->actions());
-    dataSourceSelectMenu->insertSeparator(selectFile);
+    dataSourceSelectMenu->insertSeparator(clearList);
 
     m_dataSourceSelectButton = new QPushButton;
     m_dataSourceSelectButton->setText(tr("Select &Data Source"));
@@ -137,44 +140,56 @@ MainWindow::MainWindow()
     connect(m_dataSourceSaveButton, SIGNAL(clicked()),
             this, SLOT(saveDataSource()));
 
+    QPushButton *dataSourcePlotButton = new QPushButton;
+    dataSourcePlotButton->setText(tr("Plot Data Source"));
+    dataSourcePlotButton->setToolTip(tr("Plots the interpolated data from the current selected data source."));
+    connect(dataSourcePlotButton, SIGNAL(clicked()),
+            this, SLOT(plotDataSource()));
+
+    QFileInfo plotConfigFile(MW_PLTCFG_FILE);
+    QAction *currentPlotConfigAction = new QAction(this);
+    currentPlotConfigAction->setText(plotConfigFile.exists() ? plotConfigFile.canonicalFilePath() :
+                                                               tr("default"));
+    currentPlotConfigAction->setCheckable(true);
+    currentPlotConfigAction->setChecked(true);
+    currentPlotConfigAction->setEnabled(false);
+
+    QAction *configurePlotConfigAction = new QAction(this);
+    configurePlotConfigAction->setText(tr("Change Current Configuration"));
+    configurePlotConfigAction->setToolTip(tr("Opens the configuration dialog to adjust your plotting configuration."));
+    configurePlotConfigAction->setIcon(QIcon::fromTheme("preferences-other"));
+
+    m_plotConfigSelectGroup = new QActionGroup(this);
+    m_plotConfigSelectGroup->addAction(currentPlotConfigAction);
+    m_plotConfigSelectGroup->addAction(configurePlotConfigAction);
+    connect(m_plotConfigSelectGroup, SIGNAL(selected(QAction*)),
+            this, SLOT(selectPlotConfig(QAction*)));
+
+    QMenu *plotConfigSelectMenu = new QMenu;
+    plotConfigSelectMenu->addActions(m_plotConfigSelectGroup->actions());
+    plotConfigSelectMenu->insertSeparator(configurePlotConfigAction);
+
+    QPushButton *plotConfigSelectButton = new QPushButton;
+    plotConfigSelectButton->setText(tr("Select Plotting Configuration"));
+    plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for plotting data."));
+    plotConfigSelectButton->setMenu(plotConfigSelectMenu);
+
+    QPushButton *runAsymRegButton = new QPushButton;
+    runAsymRegButton->setText(tr("Run Asymptotical Regularization"));
+    runAsymRegButton->setToolTip(tr("Starts the mathematical part of this programm."));
+    runAsymRegButton->setDefault(true);
+    runAsymRegButton->setIcon(QIcon::fromTheme("media-playback-start"));
+    connect(runAsymRegButton, SIGNAL(clicked(bool)),
+            this, SLOT(runAsymReg()));
+
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(infoLabel, 0, 0, 1, 3);
     layout->addWidget(m_dataSourceTableWidget, 1, 0, 5, 2);
     layout->addWidget(m_dataSourceSelectButton, 1, 2, 1, 1);
     layout->addWidget(m_dataSourceSaveButton, 2, 2, 1, 1);
-
-#if 0
-    QPushButton *runAsymRegButton = new QPushButton;
-    runAsymRegButton->setText(tr("Run Math"));
-    runAsymRegButton->setDefault(true);
-    connect(runAsymRegButton, SIGNAL(clicked(bool)),
-            this, SLOT(runAsymReg()));
-
-    m_confNplotPressFuncAction = new QAction(this);
-    m_confNplotPressFuncAction->setText(tr("Configure And Plot Pressure Function"));
-
-    m_plotPressFuncAction = new QAction(this);
-    m_plotPressFuncAction->setText(tr("Plot Pressure Function"));
-
-    QActionGroup *actionGroup = new QActionGroup(this);
-    actionGroup->addAction(m_plotPressFuncAction);
-    actionGroup->addAction(m_confNplotPressFuncAction);
-    connect(actionGroup, SIGNAL(triggered(QAction*)),
-            this, SLOT(plotPressureFunction(QAction *)));
-
-    QMenu *buttonMenu = new QMenu;
-    buttonMenu->addActions(actionGroup->actions());
-
-    QPushButton *plotPressureFunctionButton = new QPushButton;
-    plotPressureFunctionButton->setText(tr("Plot Options"));
-    plotPressureFunctionButton->setMenu(buttonMenu);
-    connect(plotPressureFunctionButton, SIGNAL(clicked(bool)),
-        this, SLOT(plotPressureFunction(QAction *)));
-
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(runAsymRegButton);
-    layout->addWidget(plotPressureFunctionButton);
-#endif //0
+    layout->addWidget(dataSourcePlotButton, 3, 2, 1, 1);
+    layout->addWidget(plotConfigSelectButton, 4, 2, 1, 1);
+    layout->addWidget(runAsymRegButton, 6, 0, 1, 3);
 
     setCentralWidget(new QWidget);
     centralWidget()->setLayout(layout);
@@ -192,6 +207,12 @@ MainWindow::MainWindow()
 
     // read window-size, file-lists, etc from settings:
     readSettings();
+
+    // load plotter configuration:
+    m_pressureFunctionPlotSettings = new ContourPlotterSettings;
+    connect(m_pressureFunctionPlotSettings, SIGNAL(settingsChanged()),
+            this, SLOT(changedPlotConfig()));
+    selectPlotConfig(currentPlotConfigAction); // read preset file, TODO: Move to readSettings()
 }
 
 MainWindow::~MainWindow()
@@ -285,14 +306,76 @@ int MainWindow::askToSaveDataSource(const QString &fileName)
     return ret;
 }
 
+int MainWindow::askToSavePlotConfig(const QString &fileName)
+{
+    QFileInfo fileInfo(fileName);
+    // prepare questions and information for QMessageBox:
+    QString mbTtitle = tr("Close Main - %1").arg(qApp->applicationName());
+    QString mbText = tr("The plotter configuration \"%1\" has been modified.").arg(fileInfo.fileName());
+    QString mbInfoText = tr("Do you want to save your changes or discard them?");
+
+    // construct dialog:
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(mbTtitle);
+    msgBox.setText(mbText);
+    msgBox.setInformativeText(mbInfoText);
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard |
+                              QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+    msgBox.setIcon(QMessageBox::Warning);
+
+    // show dialog and evaluate answer:
+    auto ret = msgBox.exec();
+    if (ret == QMessageBox::Save) {
+        // prepare information for QFileDialog:
+        QString fdTitle = tr("Save File - %1").arg(qApp->applicationName());
+        QString fdProposedFile;
+        if (fileInfo.exists())
+            fdProposedFile = fileInfo.canonicalFilePath();
+        else
+            fdProposedFile = MW_PLTCFG_FILE;
+        QString fdFilter =  tr("JSON Files(*.json)");
+                fdFilter += ";;" + tr("All Files(*.*)");
+
+        // construct dialog:
+        QString newFileName = QFileDialog::getSaveFileName(this,
+                                                        fdTitle,
+                                                        fdProposedFile,
+                                                        fdFilter);
+
+        // evaluate answer (& save):
+        if (!newFileName.isEmpty())
+            savePlotterSettings(newFileName, m_pressureFunctionPlotSettings);
+        else
+            ret = QMessageBox::Cancel; // saving cancled, so tell the programm
+    }
+
+    return ret; // return answer from QMessageBox
+}
+
+void MainWindow::changedPlotConfig()
+{
+    m_plotConfigChaned = true;
+    setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (isWindowModified()) {
-        QAction *dataSource = m_dataSourceSelectGroup->checkedAction();
-        int answer = askToSaveDataSource(dataSource->text());
-        if (answer == QMessageBox::Cancel) {
-            event->ignore();
-            return;
+        if (m_dataSourceChanged) {
+            QAction *dataSource = m_dataSourceSelectGroup->checkedAction();
+            int answer = askToSaveDataSource(dataSource->text());
+            if (answer == QMessageBox::Cancel) {
+                event->ignore();
+                return;
+            }
+        } else if (m_plotConfigChaned) {
+            QAction *plotConfig = m_plotConfigSelectGroup->checkedAction();
+            int answer = askToSavePlotConfig(plotConfig->text());
+            if (answer == QMessageBox::Cancel) {
+                event->ignore();
+                return;
+            }
         }
     }
 
@@ -335,9 +418,9 @@ void MainWindow::dataSourceChanged(QTableWidgetItem *item)
     // set data & mark as unsaved
     zMat(row, col) = d;
     item->setData(Qt::BackgroundRole, Qt::green);
-    setWindowModified(true); // show asterik in widowtitle
     m_dataSourceChanged = true; // make sure we know what has changed
-    m_dataSourceSaveButton->setEnabled(true);
+    m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);
+    setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
 
     m_dataSourceTableWidget->blockSignals(false);
 }
@@ -348,8 +431,8 @@ void MainWindow::discardDataSource()
         return;
 
     m_dataSourceChanged = false;
-    setWindowModified(m_dataSourceChanged);
-    m_dataSourceSaveButton->setEnabled(false);
+    setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
+    m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);
 }
 
 void MainWindow::loadDataSourceToTableWidget()
@@ -375,7 +458,7 @@ void MainWindow::loadDataSourceToTableWidget()
     m_dataSourceTableWidget->blockSignals(false);
 }
 
-bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *sett) const
+bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *sett)
 {
     QFile f(fileName);
     f.open(QIODevice::ReadOnly);
@@ -391,31 +474,13 @@ bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *s
     return ok;
 }
 
-void MainWindow::plotPressureFunction(QAction *action)
+void MainWindow::plotDataSource()
 {
     if (func == nullptr)
         return;
 
-    bool needConfigDialog = false;
-
-    if (m_pressureFunctionPlotSettings == nullptr) {
-        needConfigDialog = true;
-        m_pressureFunctionPlotSettings = new ContourPlotterSettings;
-    }
-
-    if (action == m_confNplotPressFuncAction)
-        needConfigDialog = true;
-
-    if (needConfigDialog) {
-        PlotterSettingsDialog dialog(this);
-        dialog.setPlotterSettings(m_pressureFunctionPlotSettings);
-        auto ret = dialog.exec();
-        if (ret == QDialog::Rejected)
-            return;
-
-        m_pressureFunctionPlotSettings =
-                dynamic_cast<ContourPlotterSettings *>(dialog.getPlotterSettings());
-    }
+    if (m_pressureFunctionPlotSettings == nullptr)
+        return;
 
     int steps = 200;
     VectorXd X, Y;
@@ -496,7 +561,7 @@ void MainWindow::saveDataSource(const QString &fileName, bool reload)
     }
 }
 
-bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const
+bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSettings *sett)
 {
     QFile f(fileName);
     f.open(QIODevice::WriteOnly | QIODevice::Truncate);
@@ -557,8 +622,8 @@ void MainWindow::selectDataSource(QAction *action)
             lastSelectedAction->setChecked(true);
             return;
         } else if (answer == QMessageBox::Discard) {
-            setWindowModified(false);
             m_dataSourceChanged = false;
+            setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
         }
     }
 
@@ -611,6 +676,37 @@ void MainWindow::selectDataSource(QAction *action)
 
     // update TableWidget:
     loadDataSourceToTableWidget();
+}
+
+void MainWindow::selectPlotConfig(QAction *action)
+{
+    Q_ASSERT(action != nullptr);
+    Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
+
+    if (action->isCheckable()) {
+        QFileInfo fi(action->text());
+        if (fi.exists()) {
+            m_pressureFunctionPlotSettings->blockSignals(true); // do not trigger 'settingsChanged'-signal
+            loadPlotterSettings(fi.canonicalFilePath(), m_pressureFunctionPlotSettings);
+            m_pressureFunctionPlotSettings->blockSignals(false);
+        } else {
+            delete m_pressureFunctionPlotSettings;
+            m_pressureFunctionPlotSettings = new ContourPlotterSettings;
+            connect(m_pressureFunctionPlotSettings, SIGNAL(settingsChanged()),
+                    this, SLOT(changedPlotConfig()));
+        }
+
+        return;
+    }
+
+    PlotterSettingsDialog dialog(this);
+    dialog.setPlotterSettings(m_pressureFunctionPlotSettings);
+    auto ret = dialog.exec();
+    if (ret == QDialog::Rejected)
+        return;
+
+    m_pressureFunctionPlotSettings =
+            dynamic_cast<ContourPlotterSettings *>(dialog.getPlotterSettings());
 }
 
 void MainWindow::showSvgViewer(const QString &path)

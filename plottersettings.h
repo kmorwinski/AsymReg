@@ -9,15 +9,15 @@ class PlotterSettings : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(PageType page READ page WRITE setPage NOTIFY settingsChanged)
-    Q_PROPERTY(QMap xAxisSpan READ xAxisSpan WRITE setXaxisSpan NOTIFY settingsChanged)
-    Q_PROPERTY(QMap yAxisSpan READ yAxisSpan WRITE setYaxisSpan NOTIFY settingsChanged)
-    Q_PROPERTY(QMap zAxisSpan READ zAxisSpan WRITE setZaxisSpan NOTIFY settingsChanged)
-    Q_PROPERTY(QStringList axisTitles READ axisTitles WRITE setAxisTitles NOTIFY settingsChanged)
-    Q_PROPERTY(QStringList titles READ titles WRITE setTitles NOTIFY settingsChanged)
-    Q_PROPERTY(QMap imageSize READ imageSizeMap WRITE setImageSizeMap NOTIFY settingsChanged)
-    Q_PROPERTY(bool pageBorder READ pageBorder WRITE setPageBorder NOTIFY settingsChanged)
-    Q_PROPERTY(int font READ fontIndex WRITE setFontIndex NOTIFY settingsChanged)
+    Q_PROPERTY(PageType page READ page WRITE setPage)
+    Q_PROPERTY(QMap xAxisSpan READ xAxisSpan WRITE setXaxisSpan)
+    Q_PROPERTY(QMap yAxisSpan READ yAxisSpan WRITE setYaxisSpan)
+    Q_PROPERTY(QMap zAxisSpan READ zAxisSpan WRITE setZaxisSpan)
+    Q_PROPERTY(QStringList axisTitles READ axisTitles WRITE setAxisTitles)
+    Q_PROPERTY(QStringList titles READ titles WRITE setTitles)
+    Q_PROPERTY(QMap imageSize READ imageSizeMap WRITE setImageSizeMap)
+    Q_PROPERTY(bool pageBorder READ pageBorder WRITE setPageBorder)
+    Q_PROPERTY(int font READ fontIndex WRITE setFontIndex)
 
     Q_ENUMS(PageType)
 
@@ -43,6 +43,7 @@ public:
     struct Span {
         double from;
         double to;
+        friend inline bool operator==(const Span &s1, const Span &s2);
     };
 
     PlotterSettings();
@@ -78,7 +79,7 @@ public:
 
     // only for QJson/Q_PROPERTY:
     QMap<QString, QVariant> imageSizeMap() const;
-    void setImageSizeMap(const QMap<QString, QVariant> &imageSize);
+    void setImageSizeMap(const QMap<QString, QVariant> &imageSizeMap);
 
     QMap<QString, QVariant> xAxisSpan() const;
     void setXaxisSpan(const QMap<QString, QVariant> &axisSpan);

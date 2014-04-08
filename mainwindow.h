@@ -30,8 +30,13 @@ private slots:
     void dataSourceChanged(QTableWidgetItem *item);
     void saveDataSource();
     void selectDataSource(QAction *action);
+    void plotDataSource();
 
-    void plotPressureFunction(QAction *action = nullptr);
+    // private slots for plotter configuration handling:
+    void selectPlotConfig(QAction *action);
+    void changedPlotConfig();
+
+    // Asymptotical Regularization:
     void runAsymReg();
 
     // private slots for viewing plots:
@@ -45,17 +50,21 @@ private:
     void loadDataSourceToTableWidget();
     void saveDataSource(const QString &fileName, bool reload = true);
 
+    // private functions for plotter configuration handling:
+    int askToSavePlotConfig(const QString &fileName);
+
     // read and save Plotter-Settings from/to JSON files:
-    bool loadPlotterSettings(const QString &fileName, PlotterSettings *sett) const;
-    bool savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const;
+    static bool loadPlotterSettings(const QString &fileName, PlotterSettings *sett);
+    static bool savePlotterSettings(const QString &fileName, const PlotterSettings *sett);
 
     // read and save settings, file-lists & windows-size:
     void readSettings();
     void saveSettings() const;
 
+    // members for plotter configuration handling:
     PlotterSettings *m_pressureFunctionPlotSettings;
-    QAction *m_confNplotPressFuncAction;
-    QAction *m_plotPressFuncAction;
+    QActionGroup *m_plotConfigSelectGroup;
+    bool m_plotConfigChaned;
 
     // members for data source handling:
     QActionGroup *m_dataSourceSelectGroup;

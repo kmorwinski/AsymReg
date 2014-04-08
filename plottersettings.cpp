@@ -3,6 +3,11 @@
 #include <QtCore/QMap>
 #include <QtCore/QVariant>
 
+inline bool operator==(const PlotterSettings::Span &s1, const PlotterSettings::Span &s2)
+{
+    return (s1.from == s2.from) && (s1.to == s2.to);
+}
+
 ContourPlotterSettings::ContourPlotterSettings()
     : PlotterSettings()
 {
@@ -104,50 +109,86 @@ bool PlotterSettings::pageBorder() const
 
 void PlotterSettings::setAxisTitles(const QStringList &axisTitles)
 {
+    if (m_axisTitles == axisTitles)
+        return;
+
     m_axisTitles = axisTitles;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setAxisSpan(const PlotterSettings::Span &axisSpan, Axis axis)
 {
+    if (m_axisSpans.at(axis) == axisSpan)
+        return;
+
     m_axisSpans[axis] = axisSpan;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setFontIndex(int fontIndex)
 {
+    if (m_fontIndex == fontIndex)
+        return;
+
     m_fontIndex = fontIndex;
+    emit settingsChanged();
 }
 
-void PlotterSettings::setImageSizeMap(const QMap<QString, QVariant> &imageSize)
+void PlotterSettings::setImageSizeMap(const QMap<QString, QVariant> &imageSizeMap)
 {
-    QSize s = QSize(imageSize["height"].toInt(), imageSize["width"].toInt());
-    m_imageSize = s;
+    QSize size = QSize(imageSizeMap["width"].toInt(), imageSizeMap["height"].toInt());
+    if (m_imageSize == size)
+        return;
+
+    m_imageSize = size;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setImageSize(const QSize &imageSize)
 {
+    if (m_imageSize == imageSize)
+        return;
+
     m_imageSize = imageSize;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setPage(PlotterSettings::PageType page)
 {
+    if (m_page == page)
+        return;
+
     m_page = page;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setPageBorder(bool border)
 {
+    if (m_pageBorder == border)
+        return;
+
     m_pageBorder = border;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setTitle(const QString &title, int n)
 {
     Q_ASSERT(n <= 4);
 
+    if (m_titles.at(n-1) == title)
+        return;
+
     m_titles[n-1] = title;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setTitles(const QStringList &titles)
 {
+    if (m_titles == titles)
+        return;
+
     m_titles = titles;
+    emit settingsChanged();
 }
 
 void PlotterSettings::setXaxisSpan(const QMap<QString, QVariant> &axisSpan)
