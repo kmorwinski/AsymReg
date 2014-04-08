@@ -39,7 +39,7 @@ private slots:
 
 private:
     // private functions for data source handling:
-    QAction *addDataSourceAction(const QString &fileName);
+    QAction *addDataSourceAction(const QString &fileName, bool checked = true);
     int askToSaveDataSource(const QString &fileName);
     void discardDataSource();
     void loadDataSourceToTableWidget();
@@ -48,6 +48,10 @@ private:
     // read and save Plotter-Settings from/to JSON files:
     bool loadPlotterSettings(const QString &fileName, PlotterSettings *sett) const;
     bool savePlotterSettings(const QString &fileName, const PlotterSettings *sett) const;
+
+    // read and save settings, file-lists & windows-size:
+    void readSettings();
+    void saveSettings() const;
 
     PlotterSettings *m_pressureFunctionPlotSettings;
     QAction *m_confNplotPressFuncAction;

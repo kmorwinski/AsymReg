@@ -3,6 +3,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QFileSystemWatcher>
+#include <QtCore/QSettings>
 #include <QtCore/QVariant>
 #include <QtCore/QVariantMap>
 
@@ -188,6 +189,9 @@ MainWindow::MainWindow()
     zMat.resize(11, 11);
     zMat.setZero();
     loadDataSourceToTableWidget();
+
+    // read window-size, file-lists, etc from settings:
+    readSettings();
 }
 
 MainWindow::~MainWindow()
@@ -204,7 +208,7 @@ MainWindow::~MainWindow()
         QFile::remove(*it++);
 }
 
-QAction *MainWindow::addDataSourceAction(const QString &fileName)
+QAction *MainWindow::addDataSourceAction(const QString &fileName, bool checked)
 {
     // remove "empty" action:
     QList<QAction *> list = m_dataSourceSelectGroup->actions();
@@ -223,7 +227,7 @@ QAction *MainWindow::addDataSourceAction(const QString &fileName)
     newDataSourceAction->setText(fileName);
     newDataSourceAction->setCheckable(true);
     newDataSourceAction->setActionGroup(m_dataSourceSelectGroup);
-    newDataSourceAction->setChecked(true);
+    newDataSourceAction->setChecked(checked);
 
     // sort list to make sure data files come first (start with '/'):
     list << newDataSourceAction;
@@ -305,6 +309,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         } while (++it != m_svgViewerList.end());
     }
 
+    // save window-size, fileLists to settings and exit:
+    saveSettings();
     event->accept();
 }
 
@@ -427,6 +433,37 @@ void MainWindow::plotPressureFunction(QAction *action)
     plotter.setData(Z);
 }
 
+void MainWindow::readSettings()
+{
+    QAction *dataSource = nullptr;
+
+    QSettings settings;
+    settings.beginGroup("Main");
+        settings.beginGroup("Window");
+            restoreGeometry(settings.value("geometry").toByteArray());
+            restoreState(settings.value("windowState").toByteArray());
+        settings.endGroup(); // "Window"
+        settings.beginGroup("DataSource");
+            // restore datasource file actions:
+            int size = settings.beginReadArray("source");
+            for (int i = 0; i < size; ++i) {
+                settings.setArrayIndex(i);
+                QString file = settings.value("file").toString();
+                bool checked = settings.value("selected").toBool();
+                if (QFileInfo(file).exists()) {
+                    QAction *ac = addDataSourceAction(file, checked);
+                    if (checked)
+                        dataSource = ac;
+                }
+            }
+            settings.endArray();
+        settings.endGroup(); // "DataSource"
+    settings.endGroup(); // "Main"
+
+    if (dataSource != nullptr)
+        selectDataSource(dataSource);
+}
+
 void MainWindow::runAsymReg()
 {
     VectorXd xVec, yVec;
@@ -475,6 +512,33 @@ bool MainWindow::savePlotterSettings(const QString &fileName, const PlotterSetti
         f.write(dat);
 
     return ok;
+}
+
+void MainWindow::saveSettings() const
+{
+    QSettings settings;
+    settings.beginGroup("Main");
+        settings.beginGroup("Window");
+            settings.setValue("geometry", saveGeometry());
+            settings.setValue("windowState", saveState());
+        settings.endGroup(); // "Window"
+        settings.beginGroup("DataSource");
+            // save datasource file actions:
+            settings.beginWriteArray("source");
+            QList<QAction *> list =  m_dataSourceSelectGroup->actions();
+            auto it = list.constBegin();
+            int arrayIdx = 0;
+            do {
+                QString text = (*it)->text();
+                if ((*it)->isCheckable() && (text != tr(MW_DATSRC_STR_EMPTY))) {
+                    settings.setArrayIndex(arrayIdx++);
+                    settings.setValue("file", text);
+                    settings.setValue("selected", (*it)->isChecked());
+                }
+            } while (++it != list.constEnd());
+            settings.endArray();
+        settings.endGroup(); // "DataSource"
+    settings.endGroup(); // "Main"
 }
 
 void MainWindow::selectDataSource(QAction *action)
