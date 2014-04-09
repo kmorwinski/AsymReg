@@ -1,5 +1,7 @@
 #include "plottersettingsdialog.h"
 
+#include <QtCore/QCoreApplication>
+
 #include <QtGui/QComboBox>
 #include <QtGui/QCheckBox>
 #include <QtGui/QDialogButtonBox>
@@ -20,6 +22,9 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent),
       m_settings(nullptr)
 {
+    QString appName = qApp->applicationName();
+    setWindowTitle(tr("Configure Plotter - %1").arg(appName));
+
     QGroupBox *titlesGroupBox = setupTitlesWidgets();
 
     m_axisGroupBoxes[0] = setupAxisWidgets('x');
@@ -35,7 +40,6 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
     moreButton->setText(tr("&More"));
     moreButton->setToolTip(tr("Show more options."));
     moreButton->setCheckable(true);
-    moreButton->setAutoDefault(false);
     connect(moreButton, SIGNAL(toggled(bool)),
             m_moreGroupBox, SLOT(setVisible(bool)));
 
@@ -44,6 +48,7 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
                                                        QDialogButtonBox::Reset |
                                                        QDialogButtonBox::RestoreDefaults);
     buttonBox->addButton(moreButton, QDialogButtonBox::ActionRole);
+
     connect(buttonBox->button(QDialogButtonBox::Apply), SIGNAL(clicked()),
             this, SLOT(accept()));
     connect(buttonBox->button(QDialogButtonBox::Discard), SIGNAL(clicked()),
@@ -62,6 +67,9 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
     layout->addWidget(m_moreGroupBox);
     layout->addWidget(buttonBox);
     setLayout(layout);
+
+    // set 'Apply' button as default (hit by enter key):
+    buttonBox->button(QDialogButtonBox::Apply)->setDefault(true);
 }
 
 /**
@@ -245,11 +253,17 @@ QGroupBox *PlotterSettingsDialog::setupAxisWidgets(char axis)
     spinBoxes[0] = new QDoubleSpinBox;
     spinBoxes[0]->setMinimum(-10.0);
     spinBoxes[0]->setMaximum(10.0);
+    spinBoxes[0]->setDecimals(1);
+    spinBoxes[0]->setSingleStep(.5);
+    spinBoxes[0]->setButtonSymbols(QAbstractSpinBox::PlusMinus);
     spinBoxes[0]->setToolTip(tr("Lower axis boundary"));
 
     spinBoxes[1] = new QDoubleSpinBox;
     spinBoxes[1]->setMinimum(-10.0);
     spinBoxes[1]->setMaximum(10.0);
+    spinBoxes[1]->setDecimals(1);
+    spinBoxes[1]->setSingleStep(.5);
+    spinBoxes[1]->setButtonSymbols(QAbstractSpinBox::PlusMinus);
     spinBoxes[1]->setToolTip(tr("Upper axis boundary"));
 
     QHBoxLayout *spanLayout = new QHBoxLayout;
