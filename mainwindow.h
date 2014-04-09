@@ -43,6 +43,13 @@ private slots:
     void showSvgViewer(const QString &path);
 
 private:
+    // functions to shorten long file names:
+    QString elidedFileName(const QString &fileName) const;
+    enum {
+        FileNameElideMode = Qt::ElideLeft,
+        FileNameElideSize = 200
+    };
+
     // private functions for data source handling:
     QAction *addDataSourceAction(const QString &fileName, bool checked = true);
     int askToSaveDataSource(const QString &fileName);

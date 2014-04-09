@@ -12,7 +12,7 @@
 #include <QtGui/QBrush>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QFileDialog>
-#include <QtGui/QGridLayout>
+#include <QtGui/QFontMetrics>
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QIcon>
 #include <QtGui/QLabel>
@@ -20,6 +20,7 @@
 #include <QtGui/QMessageBox>
 #include <QtGui/QPushButton>
 #include <QtGui/QToolBar>
+#include <QtGui/QToolTip>
 #include <QtGui/QTableWidget>
 #include <QtGui/QVBoxLayout>
 
@@ -45,7 +46,6 @@
 
 #define MW_PLTCFG_FILE  "../data/plotconfig.json"
 
-using namespace std;
 using namespace Eigen;
 
 static BilinearInterpol *func = nullptr;
@@ -63,9 +63,28 @@ static bool qaction_lessThan(QAction *ac1, QAction *ac2)
     return (ac1IsFile && !ac2IsFile);
 }
 
+/**
+ * Derived QMenu class to show QAction's tooltips.
+ * Taken from here: http://qt-project.org/faq/answer/how_can_i_add_tooltips_to_actions_in_menus
+ */
+class Menu : public QMenu
+{
+public:
+    bool event(QEvent *ev)
+    {
+        const QHelpEvent *helpEvent = static_cast<QHelpEvent *>(ev);
+        if (helpEvent->type() == QEvent::ToolTip) {
+            // call QToolTip::showText on that QAction's tooltip.
+            QToolTip::showText(helpEvent->globalPos(), activeAction()->toolTip());
+        } else
+            QToolTip::hideText();
+
+        return QMenu::event(ev);
+    }
+};
+
 MainWindow::MainWindow()
-    : m_pressureFunctionPlotSettings(nullptr),
-      m_plotConfigChaned(false),
+    : m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
       m_dataSourceChanged(false)
 {
@@ -93,7 +112,7 @@ MainWindow::MainWindow()
                           "in Computer Tomographie</b><br/>"
                           "<br/>"
                           "<i>Example:</i> Schlieren Imaging<br/>"
-                          "<br/>"));
+                          "<br/><br/>"));
 
     m_dataSourceTableWidget = new QTableWidget;
     m_dataSourceTableWidget->setRowCount(11);
@@ -101,32 +120,32 @@ MainWindow::MainWindow()
     connect(m_dataSourceTableWidget, SIGNAL(itemChanged(QTableWidgetItem*)),
             this, SLOT(dataSourceChanged(QTableWidgetItem*)));
 
-    QAction *emptyFile = new QAction(this);
-    emptyFile->setText(tr(MW_DATSRC_STR_EMPTY));
-    emptyFile->setCheckable(true);
-    emptyFile->setChecked(true);
-    emptyFile->setEnabled(false);
+    QAction *emptyFileAction = new QAction(this);
+    emptyFileAction->setText(tr(MW_DATSRC_STR_EMPTY));
+    emptyFileAction->setCheckable(true);
+    emptyFileAction->setChecked(true);
+    emptyFileAction->setEnabled(false);
 
-    QAction *clearList = new QAction(this);
-    clearList->setText(tr(MW_DATSRC_STR_CLEAR));
-    clearList->setToolTip(tr("Closes the selected data source and clears the list of possible files."));
-    clearList->setIcon(QIcon::fromTheme("edit-clear"));
+    QAction *clearListAction = new QAction(this);
+    clearListAction->setText(tr(MW_DATSRC_STR_CLEAR));
+    clearListAction->setToolTip(tr("Closes the selected data source and clears the list of possible files."));
+    clearListAction->setIcon(QIcon::fromTheme("edit-clear"));
 
-    QAction *selectFile = new QAction(this);
-    selectFile->setText(tr(MW_DATSRC_STR_SELECT));
-    selectFile->setToolTip(tr("Opens a filedialog to select a new source-file."));
-    selectFile->setIcon(QIcon::fromTheme("document-open"));
+    QAction *selectFileAction = new QAction(this);
+    selectFileAction->setText(tr(MW_DATSRC_STR_SELECT));
+    selectFileAction->setToolTip(tr("Opens a filedialog to select a new source-file."));
+    selectFileAction->setIcon(QIcon::fromTheme("document-open"));
 
     m_dataSourceSelectGroup = new QActionGroup(this);
-    m_dataSourceSelectGroup->addAction(emptyFile);
-    m_dataSourceSelectGroup->addAction(clearList);
-    m_dataSourceSelectGroup->addAction(selectFile);
+    m_dataSourceSelectGroup->addAction(emptyFileAction);
+    m_dataSourceSelectGroup->addAction(clearListAction);
+    m_dataSourceSelectGroup->addAction(selectFileAction);
     connect(m_dataSourceSelectGroup, SIGNAL(selected(QAction*)),
             this, SLOT(selectDataSource(QAction*)));
 
-    QMenu *dataSourceSelectMenu = new QMenu;
+    Menu *dataSourceSelectMenu = new Menu;
     dataSourceSelectMenu->addActions(m_dataSourceSelectGroup->actions());
-    dataSourceSelectMenu->insertSeparator(clearList);
+    dataSourceSelectMenu->insertSeparator(clearListAction);
 
     m_dataSourceSelectButton = new QPushButton;
     m_dataSourceSelectButton->setText(tr("Select &Data Source"));
@@ -147,16 +166,20 @@ MainWindow::MainWindow()
             this, SLOT(plotDataSource()));
 
     QFileInfo plotConfigFile(MW_PLTCFG_FILE);
+    QString plotConfigFileText = plotConfigFile.canonicalFilePath();
+
     QAction *currentPlotConfigAction = new QAction(this);
-    currentPlotConfigAction->setText(plotConfigFile.exists() ? plotConfigFile.canonicalFilePath() :
-                                                               tr("default"));
+    currentPlotConfigAction->setText(plotConfigFile.exists() ?
+                                         elidedFileName(plotConfigFileText) : tr("default"));
+    currentPlotConfigAction->setData(plotConfigFileText);
+    currentPlotConfigAction->setToolTip(plotConfigFileText);
     currentPlotConfigAction->setCheckable(true);
     currentPlotConfigAction->setChecked(true);
     currentPlotConfigAction->setEnabled(false);
 
     QAction *configurePlotConfigAction = new QAction(this);
-    configurePlotConfigAction->setText(tr("Change Current Configuration"));
-    configurePlotConfigAction->setToolTip(tr("Opens the configuration dialog to adjust your plotting configuration."));
+    configurePlotConfigAction->setText(tr("Adjust Configuration"));
+    configurePlotConfigAction->setToolTip(tr("Opens the configuration dialog to adjust your configuration."));
     configurePlotConfigAction->setIcon(QIcon::fromTheme("preferences-other"));
 
     m_plotConfigSelectGroup = new QActionGroup(this);
@@ -165,13 +188,13 @@ MainWindow::MainWindow()
     connect(m_plotConfigSelectGroup, SIGNAL(selected(QAction*)),
             this, SLOT(selectPlotConfig(QAction*)));
 
-    QMenu *plotConfigSelectMenu = new QMenu;
+    Menu *plotConfigSelectMenu = new Menu;
     plotConfigSelectMenu->addActions(m_plotConfigSelectGroup->actions());
     plotConfigSelectMenu->insertSeparator(configurePlotConfigAction);
 
     QPushButton *plotConfigSelectButton = new QPushButton;
-    plotConfigSelectButton->setText(tr("Select Plotting Configuration"));
-    plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for plotting data."));
+    plotConfigSelectButton->setText(tr("Select Plotter Configuration"));
+    plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
     plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
     QPushButton *runAsymRegButton = new QPushButton;
@@ -182,18 +205,30 @@ MainWindow::MainWindow()
     connect(runAsymRegButton, SIGNAL(clicked(bool)),
             this, SLOT(runAsymReg()));
 
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(infoLabel, 0, 0, 1, 3);
-    layout->addWidget(m_dataSourceTableWidget, 1, 0, 5, 2);
-    layout->addWidget(m_dataSourceSelectButton, 1, 2, 1, 1);
-    layout->addWidget(m_dataSourceSaveButton, 2, 2, 1, 1);
-    layout->addWidget(dataSourcePlotButton, 3, 2, 1, 1);
-    layout->addWidget(plotConfigSelectButton, 4, 2, 1, 1);
-    layout->addWidget(runAsymRegButton, 6, 0, 1, 3);
+    // layout(s):
+    QVBoxLayout *buttonLayout = new QVBoxLayout;
+    buttonLayout->addWidget(m_dataSourceSelectButton);
+    buttonLayout->addWidget(m_dataSourceSaveButton);
+    buttonLayout->addWidget(dataSourcePlotButton);
+    buttonLayout->addStretch(1);
+    buttonLayout->addWidget(plotConfigSelectButton);
+    buttonLayout->addStretch(2);
 
+    QHBoxLayout *middleLayout = new QHBoxLayout;
+    middleLayout->addWidget(m_dataSourceTableWidget);
+    middleLayout->addLayout(buttonLayout);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(infoLabel);
+    layout->addLayout(middleLayout, 1);
+    layout->addWidget(runAsymRegButton);
+
+    // our Central-Widget is just an empty QWidget to
+    // hold the main layout:
     setCentralWidget(new QWidget);
     centralWidget()->setLayout(layout);
 
+    // init file-system-watcher to recognize when dislin has finished
     QDir dir(QDir::currentPath());
     m_plotWatcher = new QFileSystemWatcher;
     m_plotWatcher->addPath(dir.canonicalPath());
@@ -245,7 +280,11 @@ QAction *MainWindow::addDataSourceAction(const QString &fileName, bool checked)
 
     // create new QAction:
     QAction *newDataSourceAction = new QAction(this);
-    newDataSourceAction->setText(fileName);
+    newDataSourceAction->setText(fontMetrics().elidedText(fileName,
+                                                          static_cast<Qt::TextElideMode>(FileNameElideMode),
+                                                          FileNameElideSize));
+    newDataSourceAction->setToolTip(fileName);
+    newDataSourceAction->setData(fileName);
     newDataSourceAction->setCheckable(true);
     newDataSourceAction->setActionGroup(m_dataSourceSelectGroup);
     newDataSourceAction->setChecked(checked);
@@ -364,14 +403,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (isWindowModified()) {
         if (m_dataSourceChanged) {
             QAction *dataSource = m_dataSourceSelectGroup->checkedAction();
-            int answer = askToSaveDataSource(dataSource->text());
+            int answer = askToSaveDataSource(dataSource->data().toString());
             if (answer == QMessageBox::Cancel) {
                 event->ignore();
                 return;
             }
         } else if (m_plotConfigChaned) {
             QAction *plotConfig = m_plotConfigSelectGroup->checkedAction();
-            int answer = askToSavePlotConfig(plotConfig->text());
+            int answer = askToSavePlotConfig(plotConfig->data().toString());
             if (answer == QMessageBox::Cancel) {
                 event->ignore();
                 return;
@@ -433,6 +472,14 @@ void MainWindow::discardDataSource()
     m_dataSourceChanged = false;
     setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
     m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);
+}
+
+QString MainWindow::elidedFileName(const QString &fileName) const
+{
+    QFontMetrics fm = fontMetrics();
+    Qt::TextElideMode em = static_cast<Qt::TextElideMode>(FileNameElideMode);
+
+    return fm.elidedText(fileName, em, FileNameElideSize);
 }
 
 void MainWindow::loadDataSourceToTableWidget()
@@ -541,7 +588,7 @@ void MainWindow::runAsymReg()
 
 void MainWindow::saveDataSource()
 {
-    QFileInfo fileInfo(m_dataSourceSelectGroup->checkedAction()->text());
+    QFileInfo fileInfo(m_dataSourceSelectGroup->checkedAction()->data().toString());
     if (fileInfo.exists())
         saveDataSource(fileInfo.canonicalFilePath());
 }
@@ -594,10 +641,9 @@ void MainWindow::saveSettings() const
             auto it = list.constBegin();
             int arrayIdx = 0;
             do {
-                QString text = (*it)->text();
-                if ((*it)->isCheckable() && (text != tr(MW_DATSRC_STR_EMPTY))) {
+                if ((*it)->isCheckable() && ((*it)->text() != tr(MW_DATSRC_STR_EMPTY))) {
                     settings.setArrayIndex(arrayIdx++);
-                    settings.setValue("file", text);
+                    settings.setValue("file", (*it)->data().toString());
                     settings.setValue("selected", (*it)->isChecked());
                 }
             } while (++it != list.constEnd());
@@ -611,12 +657,13 @@ void MainWindow::selectDataSource(QAction *action)
     Q_ASSERT(action != nullptr);
     static QAction *lastSelectedAction = nullptr;
 
+    // unsaved changes? ask user if and where to save:
     if (isWindowModified() && m_dataSourceChanged) {
         QString file;
         if (lastSelectedAction == nullptr)
             file = tr(MW_DATSRC_STR_EMPTY);
         else
-            file = lastSelectedAction->text();
+            file = lastSelectedAction->data().toString();
         int answer = askToSaveDataSource(file);
         if (answer == QMessageBox::Cancel) {
             lastSelectedAction->setChecked(true);
@@ -629,7 +676,7 @@ void MainWindow::selectDataSource(QAction *action)
 
     QString fileName;
     if (action->isCheckable())
-        fileName = action->text();
+        fileName = action->data().toString();
     else if (action->text() == tr(MW_DATSRC_STR_SELECT)) { // Select New File
         QString title = tr("Load File - %1").arg(qApp->applicationName());
         QString proposedFile = QDir("../data").canonicalPath();
@@ -684,7 +731,7 @@ void MainWindow::selectPlotConfig(QAction *action)
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
     if (action->isCheckable()) {
-        QFileInfo fi(action->text());
+        QFileInfo fi(action->data().toString());
         if (fi.exists()) {
             m_pressureFunctionPlotSettings->blockSignals(true); // do not trigger 'settingsChanged'-signal
             loadPlotterSettings(fi.canonicalFilePath(), m_pressureFunctionPlotSettings);
@@ -705,8 +752,14 @@ void MainWindow::selectPlotConfig(QAction *action)
     if (ret == QDialog::Rejected)
         return;
 
+    // restore defaults may have deleted and new'ed the settings-pointer
+    // also connect signals, if they are not already there
+    // old signal-slot connection got auto-removed by destruction of
+    // QObject (PlotterSettings is a QObject)
     m_pressureFunctionPlotSettings =
             dynamic_cast<ContourPlotterSettings *>(dialog.getPlotterSettings());
+    connect(m_pressureFunctionPlotSettings, SIGNAL(settingsChanged()),
+            this, SLOT(changedPlotConfig()), Qt::UniqueConnection);
 }
 
 void MainWindow::showSvgViewer(const QString &path)
