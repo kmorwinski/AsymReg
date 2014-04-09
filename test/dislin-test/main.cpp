@@ -3,10 +3,16 @@
 
 #include <discpp.h>
 
-#define STEPS 200
+#include <QtCore/QCoreApplication>
+
+#define STEPS 100
 
 int main(int argc, char **argv)
 {
+    QByteArray arr = qgetenv("QT_NO_GLIB");
+    std::cout << arr.data() << std::endl;
+    QCoreApplication app(argc, argv);
+
     double zmat[STEPS][STEPS];
     double fpi = 3.1415927 / 180.0;
     double stepSize = 360.0 / (STEPS - 1);
@@ -19,8 +25,8 @@ int main(int argc, char **argv)
     }
 
     Dislin g;
-    g.metafl("cons"); // output driver: display
-    //g.metafl("svg"); // output driver: display
+    //g.metafl("cons"); // output driver: display
+    g.metafl("svg"); // output driver: svg
     g.scrmod("revers"); // Hintergrund in weiß, Vordergrund in schwarz
     //g.sclfac(0.5); // Skalierungs-Faktor der Grafik
     g.window(100,100,640,453);
@@ -38,14 +44,12 @@ int main(int argc, char **argv)
     g.autres(STEPS, STEPS); // <-- bestimmt Qualitaet der Grafik!!!
     g.axspos(300, 1850);
     g.ax3len(2200, 1400, 1400);
-
     g.graf3(0.0, 360.0, 0.0, 90.0, 0.0, 360.0, 0.0, 90.0,
             -2.0, 2.0, -2.0, 1.0);
     g.crvmat((double *)zmat, STEPS, STEPS, 1, 1);
 
-    g.height(50);
-
     g.hwfont(); // hardware fonts (sehen für cons und svg gut aus)
+    g.height(50);
     g.disfin();
 
     return 0;
