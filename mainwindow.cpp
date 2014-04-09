@@ -543,6 +543,8 @@ void MainWindow::plotDataSource()
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(Z);
+
+    m_plotImageTitleStack.push(tr("Transducer Pressure"));
 }
 
 void MainWindow::readSettings()
@@ -769,17 +771,25 @@ void MainWindow::showSvgViewer(const QString &path)
     QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"}; // TODO: add more image types
     QStringList images = QDir(path).entryList(nameFilters, QDir::Files, QDir::Time);
 
+    // iterate over returned list to open all pictures
+    // with newer mod.time than m_plotTime.
     auto it = images.constBegin();
     while (it != images.constEnd()) {
         if (QFileInfo(*it).lastModified() <= m_plotTime)
             break;
 
-        SvgViewer *svgViewer = new SvgViewer(*it++, "a simple image");
+        // take last entry from title-stack:
+        QString title = m_plotImageTitleStack.pop();
+        if (title.isEmpty())
+            title = tr("unknown image");
+
+        // open svg-viwer with the latest image and the latest title:
+        SvgViewer *svgViewer = new SvgViewer(*it++, title);
         m_svgViewerList << svgViewer;
         svgViewer->show();
     }
 
-    // assume top entry in images-list is the one that was output by dislin:
+    // save 'now' for the next time we want to open image files:
     m_plotTime = QDateTime::currentDateTime();
 }
 

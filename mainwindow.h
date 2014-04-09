@@ -5,6 +5,7 @@
 
 #include <QtCore/QDateTime>
 #include <QtCore/QPointer>
+#include <QtCore/QStack>
 
 class PlotterSettings;
 class QActionGroup;
@@ -71,6 +72,7 @@ private:
     // members for plotter configuration handling:
     PlotterSettings *m_pressureFunctionPlotSettings;
     QActionGroup *m_plotConfigSelectGroup;
+    QStack<QString> m_plotImageTitleStack;
     bool m_plotConfigChaned;
 
     // members for data source handling:
