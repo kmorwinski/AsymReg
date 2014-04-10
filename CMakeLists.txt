@@ -1,6 +1,7 @@
 project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 
 # C++11 Support
 include(CXX11)
@@ -38,6 +39,11 @@ set(asymreg_SRCS
     svgviewer.cpp
 )
 
+# header files (w/o equivalent source files)
+set(asymreg_SRCS ${asymreg_SRCS}
+    eigen.h
+)
+
 # header files
 include_directories(
     ${QT_INCLUDES}
@@ -51,9 +57,9 @@ include_directories(
 # build & link executable
 qt4_automoc(${asymreg_SRCS})
 
-add_executable(${PROJECT_NAME} ${asymreg_SRCS})
+add_executable(${asymreg_BIN} ${asymreg_SRCS})
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${asymreg_BIN}
     ${QT_QTCORE_LIBRARY}
     ${QT_QTGUI_LIBRARY}
     ${QT_QTSVG_LIBRARY}
@@ -63,8 +69,11 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # intall
-install(TARGETS asymreg RUNTIME DESTINATION bin)
+install(TARGETS ${asymreg_BIN} RUNTIME DESTINATION bin)
 
 # dummy project for additional files to show up in project tree
-file(GLOB DATA_FILES "${PROJECT_SOURCE_DIR}/data/*.csv")
+file(GLOB DATA_FILES
+    "${PROJECT_SOURCE_DIR}/data/*.csv"
+    "${PROJECT_SOURCE_DIR}/data/*.json"
+)
 add_custom_target(${PROJECT_NAME}-dummy SOURCES ${DATA_FILES})
