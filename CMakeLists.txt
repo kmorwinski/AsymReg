@@ -28,6 +28,7 @@ set(DISLIN_LIB "discpp")
 
 # source files
 set(asymreg_SRCS
+    asymreg.cpp
     main.cpp
     mainwindow.cpp
     interpol.cpp
