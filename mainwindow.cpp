@@ -99,9 +99,16 @@ MainWindow::MainWindow()
     m_autoPlotAction->setIcon(QIcon::fromTheme("image-x-generic"));
     m_autoPlotAction->setCheckable(true); // state will be set in readSettings(), default "true"
 
+    m_autoRunAction = new QAction(this);
+    m_autoRunAction->setText(tr("Auto Run"));
+    m_autoRunAction->setToolTip(tr("Autostarts the Asymptotical Regularization on program startup."));
+    m_autoRunAction->setIcon(QIcon::fromTheme("media-seek-forward"));
+    m_autoRunAction->setCheckable(true); // state will be set in readSettings(), default "false"
+
     QToolBar *toolBar = new QToolBar;
     toolBar->addAction(quitAction);
     toolBar->addAction(m_autoPlotAction);
+    toolBar->addAction(m_autoRunAction);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolBar->insertSeparator(m_autoPlotAction); // separator between quit and autoplot
     toolBar->setMovable(false);
@@ -256,6 +263,12 @@ MainWindow::MainWindow()
     // make 'Enter' key hit the run-Button:
     runAsymRegButton->setDefault(true);
     runAsymRegButton->setFocus();
+
+    // auto run regularization (this is more a debug option):
+    if (m_autoRunAction->isChecked()) {
+        QMetaObject::invokeMethod(this, "runAsymReg",
+                                  Qt::QueuedConnection);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -559,6 +572,7 @@ void MainWindow::readSettings()
         settings.endGroup(); // "Window"
         settings.beginGroup("Toolbar");
             m_autoPlotAction->setChecked(settings.value("autoPlot", true).toBool());
+            m_autoRunAction->setChecked(settings.value("autoRun", false).toBool());
         settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
             // restore datasource file actions:
@@ -640,6 +654,7 @@ void MainWindow::saveSettings() const
         settings.endGroup(); // "Window"
         settings.beginGroup("Toolbar");
             settings.setValue("autoPlot", m_autoPlotAction->isChecked());
+            settings.setValue("autoRun", m_autoRunAction->isChecked());
         settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
             // save datasource file actions:

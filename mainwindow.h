@@ -87,6 +87,9 @@ private:
     QList<QPointer<SvgViewer> > m_svgViewerList;
     QDateTime m_plotTime;
     QFileSystemWatcher *m_plotWatcher;
+
+    // other:
+    QAction *m_autoRunAction;
 };
 
 #endif // MAINWINDOW_H_
