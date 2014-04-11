@@ -265,7 +265,7 @@ MainWindow::~MainWindow()
 
     // clean up plot files:
     QDir dir(QDir::currentPath());
-    QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"};
+    QStringList nameFilters = {"*.svg", "*.met"};
     QStringList images = dir.entryList(nameFilters, QDir::Files);
     auto it = images.constBegin();
     while (it != images.constEnd())
@@ -773,7 +773,7 @@ void MainWindow::showSvgViewer(const QString &path)
 {
     // use QDir class to filter all image files in 'path'
     // and sort by modification date:
-    QStringList nameFilters = {"*.svg", "*.png", "*.jpg", "*.jpeg"}; // TODO: add more image types
+    QStringList nameFilters = {"*.svg"}; // TODO: add more image types, eg "*.png", "*.jpg"
     QStringList images = QDir(path).entryList(nameFilters, QDir::Files, QDir::Time);
 
     // iterate over returned list to open all pictures
