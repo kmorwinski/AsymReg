@@ -18,6 +18,7 @@
 #include <QtGui/QLabel>
 #include <QtGui/QMenu>
 #include <QtGui/QMessageBox>
+#include <QtGui/QStatusBar>
 #include <QtGui/QPushButton>
 #include <QtGui/QToolBar>
 #include <QtGui/QToolTip>
@@ -28,13 +29,10 @@
 #include <qjson/parser.h>
 #include <qjson/serializer.h>
 
-#include <chrono>
 #include <iostream>
 #include <fstream>
 
 #include "asymreg.h"
-#include "eigen.h"
-#include "interpol.h"
 #include "plotter.h"
 #include "plottersettings.h"
 #include "plottersettingsdialog.h"
@@ -47,10 +45,10 @@
 
 #define MW_PLTCFG_FILE  "../data/plotconfig.json"
 
-using namespace Eigen;
+// private variables:
+static Eigen::MatrixXd zMat; // TODO: move to MainWindow or AsymReg class
 
-MatrixXd zMat;
-
+// private functions:
 static bool qaction_lessThan(QAction *ac1, QAction *ac2)
 {
     bool ac1IsFile = ac1->isCheckable();
@@ -522,23 +520,15 @@ bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *s
 
 void MainWindow::plotDataSource()
 {
-    auto func = AsymReg::sourceFunction();
-    if (func == nullptr)
+    if (AsymReg::sourceFunction() == nullptr)
         return;
 
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
-    int steps = ASYMREG_GRID_SIZE;
-    VectorXd X, Y;
-    X.setLinSpaced(steps, 0., 10.);
-    Y = X;
+    double dt;
+    auto Z = AsymReg::sourceFunctionPlotData(&dt);
 
-    MatrixXd Z;
-    Z.resize(X.size(), Y.size());
-    for (int i = 0; i < X.size(); ++i) {
-        for (int j = 0; j < Y.size(); ++j)
-            Z(i,j) = func->interpol(X(i),Y(j));
-    }
+    statusBar()->showMessage(tr("Interpolation Time: %L1ms").arg(dt, 0, 'f', 3));
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(Z);
@@ -579,13 +569,8 @@ void MainWindow::readSettings()
 
 void MainWindow::runAsymReg()
 {
-    VectorXd xVec, yVec;
-    xVec.setLinSpaced(ASYMREG_DATSRC_SIZE, 0., 10.);
-    yVec = xVec; //yVec.setLinSpaced(ASYMREG_DATSRC_SIZE, 0., 10.);
 
-    //auto t1 = std::chrono::high_resolution_clock::now();
-    auto func = new BilinearInterpol(xVec, yVec, zMat);
-    AsymReg::setSourceFunction(func);
+    AsymReg::createSourceFunction(zMat);
 }
 
 void MainWindow::saveDataSource()
