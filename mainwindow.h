@@ -83,6 +83,7 @@ private:
     bool m_dataSourceChanged;
 
     // members for viewing plots:
+    QAction *m_autoPlotAction;
     QList<QPointer<SvgViewer> > m_svgViewerList;
     QDateTime m_plotTime;
     QFileSystemWatcher *m_plotWatcher;

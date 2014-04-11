@@ -9,7 +9,6 @@
 
 #include <QtGui/QAction>
 #include <QtGui/QActionGroup>
-#include <QtGui/QBrush>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QFileDialog>
 #include <QtGui/QFontMetrics>
@@ -94,10 +93,19 @@ MainWindow::MainWindow()
     connect(quitAction, SIGNAL(triggered()),
             this, SLOT(close()));
 
+    m_autoPlotAction = new QAction(this);
+    m_autoPlotAction->setText(tr("Auto Plot"));
+    //m_autoPlotAction->setToolTip();
+    m_autoPlotAction->setIcon(QIcon::fromTheme("image-x-generic"));
+    m_autoPlotAction->setCheckable(true); // state will be set in readSettings(), default "true"
+
     QToolBar *toolBar = new QToolBar;
     toolBar->addAction(quitAction);
+    toolBar->addAction(m_autoPlotAction);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolBar->insertSeparator(m_autoPlotAction); // separator between quit and autoplot
     toolBar->setMovable(false);
+    toolBar->setObjectName("mainToolBar"); // shutdown warning from QSettings
     addToolBar(Qt::TopToolBarArea, toolBar);
 
     QLabel *infoLabel = new QLabel;
@@ -195,9 +203,8 @@ MainWindow::MainWindow()
     plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
     QPushButton *runAsymRegButton = new QPushButton;
-    runAsymRegButton->setText(tr("Run Asymptotical Regularization"));
+    runAsymRegButton->setText(tr("&Run Asymptotical Regularization"));
     runAsymRegButton->setToolTip(tr("Starts the mathematical part of this programm."));
-    runAsymRegButton->setDefault(true);
     runAsymRegButton->setIcon(QIcon::fromTheme("media-playback-start"));
     connect(runAsymRegButton, SIGNAL(clicked(bool)),
             this, SLOT(runAsymReg()));
@@ -245,6 +252,10 @@ MainWindow::MainWindow()
     connect(m_pressureFunctionPlotSettings, SIGNAL(settingsChanged()),
             this, SLOT(changedPlotConfig()));
     selectPlotConfig(currentPlotConfigAction); // read preset file, TODO: Move to readSettings()
+
+    // make 'Enter' key hit the run-Button:
+    runAsymRegButton->setDefault(true);
+    runAsymRegButton->setFocus();
 }
 
 MainWindow::~MainWindow()
@@ -546,6 +557,9 @@ void MainWindow::readSettings()
             restoreGeometry(settings.value("geometry").toByteArray());
             restoreState(settings.value("windowState").toByteArray());
         settings.endGroup(); // "Window"
+        settings.beginGroup("Toolbar");
+            m_autoPlotAction->setChecked(settings.value("autoPlot", true).toBool());
+        settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
             // restore datasource file actions:
             int size = settings.beginReadArray("source");
@@ -569,8 +583,11 @@ void MainWindow::readSettings()
 
 void MainWindow::runAsymReg()
 {
+    bool autoPlot = m_autoPlotAction->isChecked();
 
     AsymReg::createSourceFunction(zMat);
+    if (autoPlot)
+        plotDataSource();
 }
 
 void MainWindow::saveDataSource()
@@ -621,6 +638,9 @@ void MainWindow::saveSettings() const
             settings.setValue("geometry", saveGeometry());
             settings.setValue("windowState", saveState());
         settings.endGroup(); // "Window"
+        settings.beginGroup("Toolbar");
+            settings.setValue("autoPlot", m_autoPlotAction->isChecked());
+        settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
             // save datasource file actions:
             settings.beginWriteArray("source");
