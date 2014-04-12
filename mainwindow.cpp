@@ -602,6 +602,8 @@ void MainWindow::runAsymReg()
     AsymReg::createSourceFunction(zMat);
     if (autoPlot)
         plotDataSource();
+
+    AsymReg::generateDataSet();
 }
 
 void MainWindow::saveDataSource()

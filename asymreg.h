@@ -16,9 +16,11 @@ public:
     inline static BilinearInterpol *sourceFunction()
     { return m_sourceFunc; }
 
-    static Eigen::MatrixXd sourceFunctionPlotData(double *time);
+    static Eigen::MatrixXd sourceFunctionPlotData(double *time = nullptr);
 
     static void createSourceFunction(const Eigen::MatrixXd &srcDat);
+
+    static void generateDataSet(double *time = nullptr);
 
 private:
     static void setSourceFunction(BilinearInterpol *func);
