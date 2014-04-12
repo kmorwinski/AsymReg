@@ -2,6 +2,7 @@ project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
+set(asymreg_cl_BIN "${PROJECT_NAME}-cl")
 
 # C++11 Support
 include(CXX11)
@@ -44,6 +45,19 @@ set(asymreg_SRCS ${asymreg_SRCS}
     eigen.h
 )
 
+# commandline-client source files:
+set(asymreg_cl_SRCS
+    asymreg.cpp
+    main-cl.cpp
+    #mainwindow.cpp
+    interpol.cpp
+    #plotter.cpp
+    #plottersettings.cpp
+    #plottersettingsdialog.cpp
+    #svgviewer.cpp
+    eigen.h
+)
+
 # header files
 include_directories(
     ${QT_INCLUDES}
@@ -66,6 +80,17 @@ target_link_libraries(${asymreg_BIN}
     ${QTIOCOMPRESSOR_LIBRARY}
     ${QJSON_LIBRARIES}
     ${DISLIN_LIB}
+)
+
+add_executable(${asymreg_cl_BIN} ${asymreg_cl_SRCS})
+
+target_link_libraries(${asymreg_cl_BIN}
+    #${QT_QTCORE_LIBRARY}
+    #${QT_QTGUI_LIBRARY}
+    #${QT_QTSVG_LIBRARY}
+    #${QTIOCOMPRESSOR_LIBRARY}
+    #${QJSON_LIBRARIES}
+    #${DISLIN_LIB}
 )
 
 # intall
