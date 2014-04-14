@@ -2,6 +2,7 @@ project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
+set(asymreg_cl_BIN "${asymreg_BIN}-cl")
 
 # C++11 Support
 include(CXX11)
@@ -28,23 +29,26 @@ set(DISLIN_PATH "/usr/local/dislin")
 set(DISLIN_LIB "discpp")
 
 # source files
-set(asymreg_SRCS
+set(asymreg_COMMON_SRCS
     asymreg.cpp
-    main.cpp
-    mainwindow.cpp
     interpol.cpp
+)
+
+set(asymreg_COMMON_HDRS
+    eigen.h
+)
+
+set(asymreg_GUI_SRCS
+    mainwindow.cpp
     plotter.cpp
     plottersettings.cpp
     plottersettingsdialog.cpp
     svgviewer.cpp
 )
 
-# header files (w/o equivalent source files)
-set(asymreg_SRCS ${asymreg_SRCS}
-    eigen.h
-)
+set(asymreg_GUI_HDRS "")
 
-# header files
+# set proper include dirs:
 include_directories(
     ${QT_INCLUDES}
     ${QTIOCOMPRESSOR_INCLUDE_DIR}
@@ -54,10 +58,22 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# build & link executable
-qt4_automoc(${asymreg_SRCS})
+# build & link executables:
+qt4_automoc(${asymreg_GUI_SRCS} ${asymreg_GUI_HDRS})
 
-add_executable(${asymreg_BIN} ${asymreg_SRCS})
+add_executable(${asymreg_BIN}
+    ${asymreg_COMMON_SRCS}
+    ${asymreg_COMMON_HDRS}
+    ${asymreg_GUI_SRCS}
+    ${asymreg_GUI_HDRS}
+    main.cpp
+)
+
+add_executable(${asymreg_cl_BIN}
+    ${asymreg_COMMON_SRCS}
+    ${asymreg_COMMON_HDRS}
+    main-cl.cpp
+)
 
 target_link_libraries(${asymreg_BIN}
     ${QT_QTCORE_LIBRARY}
@@ -69,7 +85,9 @@ target_link_libraries(${asymreg_BIN}
 )
 
 # intall
-install(TARGETS ${asymreg_BIN} RUNTIME DESTINATION bin)
+install(TARGETS ${asymreg_BIN} ${asymreg_cl_BIN}
+    RUNTIME DESTINATION bin
+)
 
 # dummy project for additional files to show up in project tree
 file(GLOB DATA_FILES
