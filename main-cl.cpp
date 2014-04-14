@@ -5,18 +5,18 @@
 #include "asymreg.h"
 #include "duration.h"
 
-#define DATA_FILE  "../data/data-11x11.csv"
+#define DATA_FILE  "../data/data-11x11.csv" // TODO: read from QSettings? or from argv?
 
 using namespace Eigen;
 using ts = std::string; // ts (ToString) is much shorter
 
 // private functions:
-static void print(const std::string &text);
-static void print_begin();
-static void print_end();
-static void print_line(const std::string &text);
-static void print_line_begin(const std::string &text);
-static void print_line_end(const std::string &text);
+static inline void print(const std::string &text = "");
+static inline void print_begin();
+static inline void print_end();
+static inline void print_line(const std::string &text = "");
+static inline void print_line_begin(const std::string &text = "");
+static inline void print_line_end(const std::string &text = "");
 
 // function implementations:
 int main(int argc, char **argv)
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     print_line("Asymptotical Regularization in Computer Tomographie");
     print_line("Example: Schlieren Imaging");
     print_end();
-
+/* -------------------------------------------------------------------- */
     print_begin();
     print_line_begin(ts("Loading data from file: \"") + DATA_FILE);
 
@@ -45,6 +45,18 @@ int main(int argc, char **argv)
     print_end();
 
     AsymReg::createSourceFunction(zMat);
+/* -------------------------------------------------------------------- */
+    print_begin();
+    print_line("Generating Schlieren Data Sets...");
+
+    Duration dt;
+    AsymReg::generateDataSet(&dt);
+
+    print_line_begin("done (time used: ");
+    std::cout << dt.value() << dt.unit() << ")";
+    print_line_end();
+    print_end();
+/* -------------------------------------------------------------------- */
 
     return 0;
 }
@@ -62,7 +74,7 @@ void print_end()
 void print_line(const std::string &text)
 {
     print_line_begin(text);
-    std::cout << std::endl;
+    print_line_end();
 }
 
 void print_line_begin(const std::string &text)
@@ -72,5 +84,7 @@ void print_line_begin(const std::string &text)
 
 void print_line_end(const std::string &text)
 {
-    std::cout << " " << text << std::endl;
+    if (!text.empty())
+        std::cout << " " << text;
+    std::cout << std::endl;
 }
