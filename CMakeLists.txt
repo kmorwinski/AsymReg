@@ -31,6 +31,7 @@ set(DISLIN_LIB "discpp")
 # source files
 set(asymreg_COMMON_SRCS
     asymreg.cpp
+    duration.cpp
     interpol.cpp
 )
 

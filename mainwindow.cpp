@@ -32,6 +32,7 @@
 #include <fstream>
 
 #include "asymreg.h"
+#include "duration.h"
 #include "plotter.h"
 #include "plottersettings.h"
 #include "plottersettingsdialog.h"
@@ -549,10 +550,12 @@ void MainWindow::plotDataSource()
 
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
-    double dt;
-    auto Z = AsymReg::sourceFunctionPlotData(&dt);
+    Duration dur;
+    auto Z = AsymReg::sourceFunctionPlotData(&dur);
 
-    statusBar()->showMessage(tr("Interpolation Time: %L1ms").arg(dt, 0, 'f', 3));
+    auto dt = dur.value();
+    auto unit = dur.unit();
+    statusBar()->showMessage(tr("Interpolation Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(Z);

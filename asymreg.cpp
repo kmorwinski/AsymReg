@@ -1,15 +1,15 @@
 #include "asymreg.h"
 
 #include <cfloat>
-#include <chrono>
 #include <cmath>
 #include <iostream>
 
+#include "duration.h"
 #include "interpol.h"
 
 // namespaces:
 using namespace Eigen;
-using namespace std::chrono;
+using hrc = std::chrono::high_resolution_clock;
 
 // init static members:
 BilinearInterpol *AsymReg::m_sourceFunc(nullptr);
@@ -23,22 +23,27 @@ void AsymReg::createSourceFunction(const MatrixXd &srcDat)
     AsymReg::setSourceFunction(func);
 }
 
-void AsymReg::generateDataSet(double *time)
+void AsymReg::generateDataSet(Duration *time)
 {
     const int N = ASYMREG_RECORDING_ANGLES;
 
+    auto t1 = hrc::now();
     ArrayXd phi = ArrayXd::LinSpaced(N, 0., M_PI - DBL_EPSILON);
     ArrayXXd sigmas(N, 2);
     sigmas.col(0) = phi.cos();
     sigmas.col(1) = phi.sin();
     std::cout << "Sigmas:\n" << sigmas << std::endl;
+    auto t2 = hrc::now();
+
+    if (time != nullptr)
+        *time = t2 - t1;
 }
 
-MatrixXd AsymReg::sourceFunctionPlotData(double *time)
+MatrixXd AsymReg::sourceFunctionPlotData(Duration *time)
 {
     assert(m_sourceFunc != nullptr);
 
-    auto t1 = high_resolution_clock::now();
+    auto t1 = hrc::now();
     VectorXd X = VectorXd::LinSpaced(Sequential, ASYMREG_GRID_SIZE, 0., 10.);
     MatrixXd Z(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     MatrixXd::Index i = 0;
@@ -50,11 +55,10 @@ MatrixXd AsymReg::sourceFunctionPlotData(double *time)
         }
         i++;
     }
-    auto t2 = high_resolution_clock::now();
-    auto dt = duration_cast<std::chrono::microseconds>(t2-t1).count()/1000.;
+    auto t2 = hrc::now();
 
     if (time != nullptr)
-        *time = dt;
+        *time = t2 - t1;
 
     return Z;
 }

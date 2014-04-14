@@ -3,6 +3,7 @@
 #include <string>
 
 #include "asymreg.h"
+#include "duration.h"
 
 #define DATA_FILE  "../data/data-11x11.csv"
 
