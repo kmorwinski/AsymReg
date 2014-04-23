@@ -34,19 +34,17 @@ sigmasT=[cos(phis_);sin(phis_)];
 r=-1:rSAMP:1;
 s=-1:sSAMP:1;
 
-% standard vectors for $r*sigmaT$
-line1=sigmasT(:,2)*r;
-
 % iterate over all recording angles
 for j=1:N
     sigma=sigmas(:,j); % set current angle
+    line1=sigmasT(:,j)*r; % standard vectors for $r*sigmaT$
 
     % create new figure:
     figure;
     hold on;
 
     %line=[];
-    line=zeros(2,N,length(s)); %preallocate matrix
+    line=zeros(2,length(s),N); %preallocate matrix
     for i=1:length(s)
         % $ L(s) = s_i*sigma_j + r*sigma_j^{T} $
         line(:,:,i)=[line1(1,:)+s(i)*sigma(1) ; line1(2,:)+s(i)*sigma(2)];
