@@ -5,6 +5,7 @@
 
 % clean up:
 clear all;
+close all; % close all open figures
 clc;
 
 %%
@@ -14,7 +15,7 @@ clc;
 % * rSAMP: sample distance of r-axis
 % * sSAMP: sample distance of s-axis
 %
-N=5;
+N=9;
 rSAMP=0.5;
 sSAMP=0.5;
 
@@ -51,7 +52,7 @@ for j=1:N
 
         %plot line and sample-points:
         scatter(line(1,:,i),line(2,:,i));
-        plot(line(1,:,i),line(2,:,i));
+        plot(line(1,:,i),line(2,:,i),'LineWidth',2);
     end
 
     % add title with current recording angle to plot:
@@ -64,6 +65,15 @@ for j=1:N
     grid on;
 
     % plot angle phi
-    angle=(sigma*s)>0;
-    plot(angle(1,:),angle(2,:),'k');
+    angle=(sigma*s);
+    angleX=angle(1,:);
+    angleY=angle(2,:);
+    if (phis(j) <= 90) % 0° <= phi <= 90°
+        angleX=angleX(angleX>=0); % only positiv X entries
+        angleY=angleY(length(angleY)-length(angleX)+1:end); % choose proper Y
+    else
+        angleY=angleY(angleY>=0); % only positiv Y entries
+        angleX=angleX(length(angleX)-length(angleY)+1:end); % choose proper X
+    end
+    plot(angleX,angleY,'k','LineWidth',2);
 end
