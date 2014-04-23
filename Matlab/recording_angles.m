@@ -54,8 +54,8 @@ for j=1:N
     end
 
     % add title with current recording angle to plot:
-    str=sprintf('recording angle phi_%d=%d',j,phis(j));
-    title(texlabel(str));
+    str=sprintf('recording angle \\phi_%d = %.2f^\\circ',j,phis(j));
+    title(str);
 
     % add grid & origin to plot:
     hline(0,'--r');
