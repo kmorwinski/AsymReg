@@ -12,12 +12,10 @@ clc;
 % setup
 % 
 % * N: num of recording angles equally distributed in $[0,\pi]$
-% * rSAMP: sample distance of r-axis
-% * sSAMP: sample distance of s-axis
+% * SAMP: sample time of r-,s-axis
 %
 N=9;
-rSAMP=0.5;
-sSAMP=0.5;
+SAMP=0.25;
 
 %%
 % Recording angles
@@ -32,8 +30,8 @@ phis_=phis_+pi/2; % +90°
 sigmasT=[cos(phis_);sin(phis_)];
 
 % discrete intervalls of $r=[-1,1]$ and $s=[-1,1]$
-r=-1:rSAMP:1;
-s=-1:sSAMP:1;
+r=-1:SAMP:1;
+s=-1:SAMP:1;
 
 % iterate over all recording angles
 for j=1:N
