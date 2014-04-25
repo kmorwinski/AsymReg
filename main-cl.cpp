@@ -7,7 +7,6 @@
 
 #define DATA_FILE  "../data/data-11x11.csv" // TODO: read from QSettings? or from argv?
 
-using namespace Eigen;
 using ts = std::string; // ts (ToString) is much shorter
 
 // private functions:
@@ -33,7 +32,7 @@ int main(int argc, char **argv)
     std::fstream fs;
     fs.open(DATA_FILE, std::fstream::in);
     if (fs.is_open()) {
-        fs >> zMat;
+        fs >> zMat.format2(EIGEN_FMT_CSV);
         print_line_end("\" ok!");
     } else {
         zMat.setZero();

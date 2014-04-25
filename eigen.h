@@ -1,121 +1,15 @@
 #ifndef EIGEN_H_
 #define EIGEN_H_
 
-// set CSV Format as default:
-#define EIGEN_DEFAULT_IO_FORMAT IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
+#include "eigen_addons.h"
+#include "eigen_io.h"
+#include "eigen_iterator.h"
 
 #include <Eigen/Dense>
 
-#include <istream>
+using namespace Eigen;
 
-namespace Eigen {
-    // support range-based for-loops (C++11):
-    //   (end() function works only for vectors, so we
-    //   only allow vector types!!!)
-    template<typename _Scalar, int _Rows, int _Cols>
-    _Scalar *begin(Matrix<_Scalar, _Rows, _Cols> &mat)
-    {
-        EIGEN_STATIC_ASSERT((_Rows == 1) || (_Cols == 1),
-                            YOU_TRIED_CALLING_A_VECTOR_METHOD_ON_A_MATRIX);
-        return mat.data();
-    }
-
-    template<typename _Scalar, int _Rows, int _Cols, int _Options>
-    _Scalar *end(Matrix<_Scalar, _Rows, _Cols, _Options> &mat)
-    {
-        EIGEN_STATIC_ASSERT((_Rows == 1) || (_Cols == 1),
-                            YOU_TRIED_CALLING_A_VECTOR_METHOD_ON_A_MATRIX);
-
-        if (_Options & RowMajor) { // RowVector
-            if (_Cols == Dynamic)
-                return &mat.data()[mat.cols()-1];
-            return &mat.data()[_Cols-1];
-        }
-
-        // Vector:
-        if (_Rows == Dynamic)
-            return &mat.data()[mat.rows()-1];
-        return &mat.data()[_Rows-1];
-    }
-
-    // istream operator to read data from file:
-    template<typename Derived>
-    std::istream &operator>>(std::istream &s, DenseBase<Derived> &m)
-    {
-        return read_matrix(s, m, EIGEN_DEFAULT_IO_FORMAT);
-    }
-
-    template<typename Derived>
-    std::istream &read_matrix(std::istream &s, DenseBase<Derived> &m, const IOFormat &fmt)
-    {
-        typedef typename Derived::Scalar Scalar;
-
-        typedef typename Derived::Index Index;
-        const Index cols = m.cols();
-        const Index rows = m.rows();
-        eigen_assert((m.ColsAtCompileTime != Dynamic) || cols);
-        eigen_assert((m.RowsAtCompileTime != Dynamic) || rows);
-
-        const int coeffSeparatorSize = fmt.coeffSeparator.size();
-        const int rowSeparatorSize = fmt.rowSeparator.size();
-        const int matPrefixSize = fmt.matPrefix.size();
-        const int matSuffixSize = fmt.matSuffix.size();
-        const int rowSpacerSize = fmt.rowSpacer.size();
-        const int rowPrefixSize = fmt.rowPrefix.size();
-        const int rowSuffixSize = fmt.rowSuffix.size();
-
-        // strings to compare stream's content with fmt:
-        std::string coeffSeparator(coeffSeparatorSize, '\0');
-        std::string rowSeparator(rowSeparatorSize, '\0');
-        std::string matPrefix(matPrefixSize, '\0');
-        std::string matSuffix(matSuffixSize, '\0');
-        std::string rowPrefix(rowPrefixSize, '\0');
-        std::string rowSuffix(rowSuffixSize, '\0');
-
-        // Matrix Prefix:
-        s.read(&matPrefix[0], matPrefixSize);
-        eigen_assert(fmt.matPrefix.compare(matPrefix) == 0);
-
-        for (Index r = 0; r < rows; ++r) {
-            if (r) {
-                // Row Separator:
-                s.read(&rowSeparator[0], rowSeparatorSize);
-                eigen_assert(fmt.rowSeparator.compare(rowSeparator) == 0);
-
-                // Row Spacer:
-                s.ignore(rowSpacerSize);
-            }
-
-            // Row Prefix:
-            s.read(&rowPrefix[0], rowPrefixSize);
-            eigen_assert(fmt.rowPrefix.compare(rowPrefix) == 0);
-
-            // iterate over col's to read actual data:
-            for (Index c = 0; c < cols; ++c) {
-                if (c) {
-                    // Coeff Separator:
-                    s.read(&coeffSeparator[0], coeffSeparatorSize);
-                    eigen_assert(fmt.coeffSeparator.compare(coeffSeparator) == 0);
-                }
-
-                eigen_assert(s.good());
-                Scalar val;
-                s >> val;
-                m(r, c) = val;
-            }
-
-            // Row Suffix:
-            s.read(&rowSuffix[0], rowSuffixSize);
-            eigen_assert(fmt.rowSuffix.compare(rowSuffix) == 0);
-        }
-
-        // Matrix Suffix:
-        s.read(&matSuffix[0], matSuffixSize);
-        eigen_assert(fmt.matSuffix.compare(matSuffix) == 0);
-
-        return s;
-    }
-
-} // namespace Eigen
+#define EIGEN_FMT_CSV    IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
+#define EIGEN_FMT_PRETTY IOFormat(4, 0, ", ", "\n", "[", "]")
 
 #endif // EIGEN_H_

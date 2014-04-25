@@ -621,7 +621,7 @@ void MainWindow::saveDataSource(const QString &fileName, bool reload)
     std::fstream fs;
     fs.open(fileName.toAscii().data(), std::fstream::out | std::fstream::trunc);
     Q_ASSERT(fs.is_open());
-    fs << zMat;
+    fs << zMat.format(EIGEN_FMT_CSV);
     fs.close();
 
     discardDataSource();
@@ -743,7 +743,7 @@ void MainWindow::selectDataSource(QAction *action)
         std::fstream fs;
         fs.open(fileName.toAscii().data(), std::fstream::in);
         Q_ASSERT(fs.is_open());
-        fs >> zMat;
+        fs >> zMat.format2(EIGEN_FMT_CSV);
         fs.close();
     } else
         zMat.setZero();

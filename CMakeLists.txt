@@ -23,6 +23,7 @@ find_package(QJSON 0.8.1 REQUIRED)
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
+add_definitions(-DEIGEN_DENSEBASE_ADDONS_FILE=\"${PROJECT_SOURCE_DIR}/eigen_densebaseaddons.h\")
 
 # DISLIN 10.4.1
 set(DISLIN_PATH "/usr/local/dislin")
@@ -37,6 +38,9 @@ set(asymreg_COMMON_SRCS
 
 set(asymreg_COMMON_HDRS
     eigen.h
+    eigen_addons.h
+    eigen_iterator.h
+    eigen_io.h
 )
 
 set(asymreg_GUI_SRCS
