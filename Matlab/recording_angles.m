@@ -12,10 +12,12 @@ clc;
 % setup
 % 
 % * N: num of recording angles equally distributed in $[0,\pi]$
-% * SAMP: sample time of r-,s-axis
+% * rSAMP: sample time of r-axis
+% * sSAMP: sample time of s-axis
 %
 N=9;
-SAMP=0.25;
+rSAMP=0.5;
+sSAMP=1;
 
 %%
 % Recording angles
@@ -30,8 +32,8 @@ phis_=phis_+pi/2; % +90°
 sigmasT=[cos(phis_);sin(phis_)];
 
 % discrete intervalls of $r=[-1,1]$ and $s=[-1,1]$
-r=-1:SAMP:1;
-s=-1:SAMP:1;
+r=-1:rSAMP:1;
+s=-1:sSAMP:1;
 
 % iterate over all recording angles
 for j=1:N
@@ -42,8 +44,8 @@ for j=1:N
     figure;
     hold on;
 
-    %line=[];
-    line=zeros(2,length(s),N); %preallocate matrix
+    %line=[]; %init matrix w/o preallocation
+    line=zeros(2,length(r),length(s)); %preallocate matrix
     for i=1:length(s)
         % $ L(s) = s_i*sigma_j + r*sigma_j^{T} $
         line(:,:,i)=[line1(1,:)+s(i)*sigma(1) ; line1(2,:)+s(i)*sigma(2)];
