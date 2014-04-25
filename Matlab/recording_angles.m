@@ -14,10 +14,14 @@ clc;
 % * N: num of recording angles equally distributed in $[0,\pi]$
 % * rSAMP: sample time of r-axis
 % * sSAMP: sample time of s-axis
+% * PLOT: show a plot for every every lines-set
+% * PRINT: print every lines-set to console
 %
 N=9;
 rSAMP=0.5;
 sSAMP=1;
+PLOT=false;
+PRINT=true;
 
 %%
 % Recording angles
@@ -40,9 +44,16 @@ for j=1:N
     sigma=sigmas(:,j); % set current angle
     line1=sigmasT(:,j)*r; % standard vectors for $r*sigmaT$
 
-    % create new figure:
-    figure;
-    hold on;
+    if (PLOT)
+        % create new figure:
+        figure;
+        hold on;
+    end
+
+    if (PRINT)
+        display('********');
+        display(sprintf('** recording angle phi_%d = %.2f',j,phis(j)));
+    end
 
     %line=[]; %init matrix w/o preallocation
     line=zeros(2,length(r),length(s)); %preallocate matrix
@@ -50,30 +61,41 @@ for j=1:N
         % $ L(s) = s_i*sigma_j + r*sigma_j^{T} $
         line(:,:,i)=[line1(1,:)+s(i)*sigma(1) ; line1(2,:)+s(i)*sigma(2)];
 
-        %plot line and sample-points:
-        scatter(line(1,:,i),line(2,:,i));
-        plot(line(1,:,i),line(2,:,i),'LineWidth',2);
+        if (PLOT)
+            %plot line and sample-points:
+            scatter(line(1,:,i),line(2,:,i));
+            plot(line(1,:,i),line(2,:,i),'LineWidth',2);
+        end 
+
+        if (PRINT)
+            % print line for sample point s:
+            %str=;
+            display(sprintf('** sample point s_%d = %.2f:',i,s(i)));
+            display(line(:,:,i));
+        end
     end
+    
+    if (PLOT)
+        % add title with current recording angle to plot:
+        str=sprintf('recording angle \\phi_%d = %.2f^\\circ',j,phis(j));
+        title(str);
 
-    % add title with current recording angle to plot:
-    str=sprintf('recording angle \\phi_%d = %.2f^\\circ',j,phis(j));
-    title(str);
+        % add grid & origin to plot:
+        hline(0,'--r');
+        vline(0,'--r');
+        grid on;
 
-    % add grid & origin to plot:
-    hline(0,'--r');
-    vline(0,'--r');
-    grid on;
-
-    % plot angle phi
-    angle=(sigma*s);
-    angleX=angle(1,:);
-    angleY=angle(2,:);
-    if (phis(j) <= 90) % 0° <= phi <= 90°
-        angleX=angleX(angleX>=0); % only positiv X entries
-        angleY=angleY(length(angleY)-length(angleX)+1:end); % choose proper Y
-    else
-        angleY=angleY(angleY>=0); % only positiv Y entries
-        angleX=angleX(length(angleX)-length(angleY)+1:end); % choose proper X
+        % plot angle phi
+        angle=(sigma*s);
+        angleX=angle(1,:);
+        angleY=angle(2,:);
+        if (phis(j) <= 90) % 0° <= phi <= 90°
+            angleX=angleX(angleX>=0); % only positiv X entries
+            angleY=angleY(length(angleY)-length(angleX)+1:end); % choose proper Y
+        else
+            angleY=angleY(angleY>=0); % only positiv Y entries
+            angleX=angleX(length(angleX)-length(angleY)+1:end); % choose proper X
+        end
+        plot(angleX,angleY,'k','LineWidth',2);
     end
-    plot(angleX,angleY,'k','LineWidth',2);
 end
