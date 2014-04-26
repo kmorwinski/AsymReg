@@ -16,10 +16,14 @@ static inline void print_end();
 static inline void print_line(const std::string &text = "");
 static inline void print_line_begin(const std::string &text = "");
 static inline void print_line_end(const std::string &text = "");
+static void set_fpu (unsigned int mode);
 
 // function implementations:
 int main(int argc, char **argv)
 {
+    //set_fpu(0x270); // use double-precision rounding
+    std::cout << std::fixed;
+
     print_begin();
     print_line("Asymptotical Regularization in Computer Tomographie");
     print_line("Example: Schlieren Imaging");
@@ -87,3 +91,9 @@ void print_line_end(const std::string &text)
         std::cout << " " << text;
     std::cout << std::endl;
 }
+
+void set_fpu (unsigned int mode)
+{
+    asm("fldcw %0" : : "m" (*&mode));
+}
+
