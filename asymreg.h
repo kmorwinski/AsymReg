@@ -5,7 +5,9 @@
 
 #define ASYMREG_GRID_SIZE  200
 
-#define ASYMREG_RECORDING_ANGLES  10
+#define ASYMREG_RECORDING_ANGLES  3
+
+#define AR_SAMP  1.0
 
 #include "eigen.h"
 
