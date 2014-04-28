@@ -594,8 +594,11 @@ void MainWindow::readSettings()
         settings.endGroup(); // "DataSource"
     settings.endGroup(); // "Main"
 
-    if (dataSource != nullptr)
-        selectDataSource(dataSource);
+    if (dataSource != nullptr) {
+        QMetaObject::invokeMethod(this, "selectDataSource",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(QAction *, dataSource));
+    }
 }
 
 void MainWindow::runAsymReg()
@@ -701,8 +704,9 @@ void MainWindow::selectDataSource(QAction *action)
         }
     }
 
+    // now select from which file to import data:
     QString fileName;
-    if (action->isCheckable())
+    if (action->isCheckable()) // this one has a file name inside!
         fileName = action->data().toString();
     else if (action->text() == tr(MW_DATSRC_STR_SELECT)) { // Select New File
         QString title = tr("Load File - %1").arg(qApp->applicationName());
@@ -735,18 +739,53 @@ void MainWindow::selectDataSource(QAction *action)
         action = nullptr; // need nullptr for saving-changed-data logic
     }
 
-    // save for later use:
-    lastSelectedAction = action;
-
-    // read data to zMat
+    // try to import data to zMat:
     if (!fileName.isEmpty()) {
+        QString exceptionString;
         std::fstream fs;
-        fs.open(fileName.toAscii().data(), std::fstream::in);
-        Q_ASSERT(fs.is_open());
-        fs >> zMat.format2(EIGEN_FMT_CSV);
-        fs.close();
+        try {
+            fs.open(fileName.toAscii().data(), std::fstream::in);
+            fs.exceptions(std::ios_base::failbit | std::ios_base::badbit); // throw execptions on bad and fail
+            fs >> zMat.format2(EIGEN_FMT_CSV);
+            fs.close();
+        } catch (const std::ios_base::failure &e) {
+            exceptionString = tr("Caught an ios_base::failure.\n"
+                             "Explanatory string: %1\n")
+                    .arg(e.what());
+        } catch (const IOFormatException &e) {
+            exceptionString = e.what();
+        } catch (...) {
+            exceptionString = tr("Unknown Exception");
+        }
+
+        // did something fail?
+        // (Exceptions are only for debugging)
+        if (fs.fail()) {
+            // prepare information:
+            QFileInfo fileInfo(fileName);
+            QString title = tr("Import Data Source - %1").arg(qApp->applicationName());
+            QString text = tr("Failed to import data from file \"%1\"!").arg(fileInfo.fileName());
+
+            // construct error dialog:
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle(title);
+            msgBox.setText(text);
+            msgBox.setDetailedText(exceptionString);
+            msgBox.setStandardButtons(QMessageBox::Ok);
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.exec();
+
+            // loading failed so uncheck action:
+            action->setChecked(false); // TODO: should we rather delete action???
+            action = nullptr; // to preserve lastSelectedAction logic for saving data
+
+            zMat.setZero(); // clear incomplete data
+        }
     } else
-        zMat.setZero();
+        zMat.setZero(); // clear matrix
+
+    // save QAction pointer for later use:
+    lastSelectedAction = action;
 
     // update TableWidget:
     loadDataSourceToTableWidget();
