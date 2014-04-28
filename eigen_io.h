@@ -1,11 +1,78 @@
 #ifndef EIGEN_IO_H_
 #define EIGEN_IO_H_
 
+#include <stdexcept>
 #include <istream>
+#include <sstream>
 
 #include <Eigen/Core>
 
 namespace Eigen {
+
+class IOFormatException : public std::runtime_error
+{
+public:
+    enum ExceptionType {
+        CoeffSeparatorException,
+        RowSeparatorException,
+        MatPrefixException,
+        MatSuffixException
+    };
+
+    IOFormatException(ExceptionType exception, const std::string &expectedDelim, const std::string &foundDelim,
+                      int rowIndex = -1, int colIndex = -1)
+        : runtime_error("")
+    {
+        std::ostringstream what;
+        what << "Eigen::IOFormat import error" << " while parsing ";
+
+        switch (exception) {
+        case CoeffSeparatorException:
+            what << "coeffSeparator after element ("
+                 << rowIndex << ',' << colIndex << ')';
+            break;
+        case RowSeparatorException:
+            what << "rowSeparator at the end of row " << rowIndex;
+            break;
+        case MatPrefixException:
+            what << "matPrefix";
+            break;
+        case MatSuffixException:
+            what << "matSuffix";
+            break;
+        }
+
+        what << ":\n\t expected delimeter '";
+        // escape '\n' and '\t' chars in delimeter:
+        for (int i = 0; i < expectedDelim.size(); ++i) {
+            if (expectedDelim[i] == '\n')
+                what << "\\n";
+            else if (expectedDelim[i] == '\t')
+                what << "\\t";
+            else
+                what << expectedDelim[i];
+        }
+        what << "' but found '";
+        // escape '\n' and '\t' chars in delimeter:
+        for (int i = 0; i < foundDelim.size(); ++i) {
+            if (foundDelim[i] == '\n')
+                what << "\\n";
+            else if (foundDelim[i] == '\t')
+                what << "\\t";
+            else
+                what << foundDelim[i];
+        }
+        what << "' instead";
+
+        // Insert dynamically created what-string into runtime_error class.
+        // This is easier than overloading what(). First of all it is less code.
+        // But more important, it preserves the string after throwing the
+        // exception. I don't know exactly why, but it can get lost and you end
+        // with what() returing "".
+        // http://stackoverflow.com/questions/2614113/return-a-dynamic-string-from-stdexceptions-what
+        static_cast<std::runtime_error &>(*this) = std::runtime_error(what.str());
+    }
+};
 
 // istream-operator to import data from stream/file:
 template<typename Derived>
@@ -22,71 +89,95 @@ template<typename Derived>
 std::istream &import_matrix(std::istream &s, Derived &m, const IOFormat &fmt)
 {
     typedef typename Derived::Scalar Scalar;
-
     typedef typename Derived::Index Index;
-    const Index cols = m.cols();
-    const Index rows = m.rows();
-    eigen_assert((m.ColsAtCompileTime != Dynamic) || cols);
-    eigen_assert((m.RowsAtCompileTime != Dynamic) || rows);
 
-    const int coeffSeparatorSize = fmt.coeffSeparator.size();
-    const int rowSeparatorSize = fmt.rowSeparator.size();
-    const int matPrefixSize = fmt.matPrefix.size();
-    const int matSuffixSize = fmt.matSuffix.size();
-    const int rowSpacerSize = fmt.rowSpacer.size();
-    const int rowPrefixSize = fmt.rowPrefix.size();
-    const int rowSuffixSize = fmt.rowSuffix.size();
+    // m needs to have a fixed or known size, otherwise import will fail:
+    eigen_assert((m.ColsAtCompileTime != Dynamic) || m.cols());
+    eigen_assert((m.RowsAtCompileTime != Dynamic) || m.rows());
 
-    // strings to compare stream's content with fmt:
-    std::string coeffSeparator(coeffSeparatorSize, '\0');
-    std::string rowSeparator(rowSeparatorSize, '\0');
-    std::string matPrefix(matPrefixSize, '\0');
-    std::string matSuffix(matSuffixSize, '\0');
-    std::string rowPrefix(rowPrefixSize, '\0');
-    std::string rowSuffix(rowSuffixSize, '\0');
+    // string to compare stream's content with fmt:
+    std::string rowSepDelim(fmt.rowSeparator.size(), '\0');
+    std::string coeffSepDelim(fmt.coeffSeparator.size(), '\0');
+    std::string otherDelim; // matPrefix, matSuffix
 
     // Matrix Prefix:
-    s.read(&matPrefix[0], matPrefixSize);
-    eigen_assert(fmt.matPrefix.compare(matPrefix) == 0);
+    otherDelim.resize(fmt.matPrefix.size()); // automatically filled with '\0'
+    s.read(&otherDelim[0], fmt.matPrefix.size());
+    if (fmt.matPrefix.compare(otherDelim)) {
+#ifndef EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+        throw IOFormatException(IOFormatException::MatPrefixException,
+                                fmt.matPrefix, otherDelim);
+#endif // EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+        goto fail_out;
+    }
 
-    for (Index r = 0; r < rows; ++r) {
+    for (Index r = 0; r < m.rows(); ++r) {
         if (r) {
             // Row Separator:
-            s.read(&rowSeparator[0], rowSeparatorSize);
-            eigen_assert(fmt.rowSeparator.compare(rowSeparator) == 0);
+            s.read(&rowSepDelim[0], fmt.rowSeparator.size());
+            if (fmt.rowSeparator.compare(rowSepDelim)) {
+#ifndef EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+                throw IOFormatException(IOFormatException::RowSeparatorException,
+                                        fmt.rowSeparator, rowSepDelim, r);
+#endif // EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+                goto fail_out;
+            }
 
             // Row Spacer:
-            s.ignore(rowSpacerSize);
+            s.ignore(fmt.rowSpacer.size()); // just skip the size of a rowSpacer
         }
 
         // Row Prefix:
-        s.read(&rowPrefix[0], rowPrefixSize);
-        eigen_assert(fmt.rowPrefix.compare(rowPrefix) == 0);
+        s.ignore(fmt.rowPrefix.size()); // just skip appropriate length of chars
 
         // iterate over col's to read actual data:
-        for (Index c = 0; c < cols; ++c) {
+        for (Index c = 0; c < m.cols(); ++c) {
             if (c) {
                 // Coeff Separator:
-                s.read(&coeffSeparator[0], coeffSeparatorSize);
-                eigen_assert(fmt.coeffSeparator.compare(coeffSeparator) == 0);
+                s.read(&coeffSepDelim[0], fmt.coeffSeparator.size());
+                if (fmt.coeffSeparator.compare(coeffSepDelim)) {
+#ifndef EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+                    throw IOFormatException(IOFormatException::CoeffSeparatorException,
+                                            fmt.coeffSeparator, coeffSepDelim, r, c);
+#endif // EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+                    goto fail_out;
+                }
             }
 
-            eigen_assert(s.good());
+            // Parse value:
             Scalar val;
             s >> val;
-            m(r, c) = val;
 
+            // If anything went wrong above at parsing 'val', then it is not a IOFormat
+            // problem, but rather a bad stream. So we don't throw an exection here.
+            // The user can still do this by calling
+            //   istream.exceptions(std::io_base::failbit | std::io_base::badbit);
+            // beforehand and catch for 'const std::ios_base::failure &e'.
+            if (s.fail())
+                return s; // failbit or badbit set already, so just return from function
+
+            m(r, c) = val; // insert value
         }
 
         // Row Suffix:
-        s.read(&rowSuffix[0], rowSuffixSize);
-        eigen_assert(fmt.rowSuffix.compare(rowSuffix) == 0);
+        s.ignore(fmt.rowSuffix.size()); // just skip appropriate length of chars
     }
 
     // Matrix Suffix:
-    s.read(&matSuffix[0], matSuffixSize);
-    eigen_assert(fmt.matSuffix.compare(matSuffix) == 0);
+    otherDelim.resize(fmt.matSuffix.size());
+    s.read(&otherDelim[0], fmt.matSuffix.size());
+    if (fmt.matSuffix.compare(otherDelim)) {
+#ifndef EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+        throw IOFormatException(IOFormatException::MatSuffixException,
+                                fmt.matSuffix, otherDelim);
+#endif // EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS
+        goto fail_out;
+    }
 
+    return s;
+
+fail_out:
+    s.setstate(std::ios::failbit);
     return s;
 }
 
