@@ -17,8 +17,8 @@ protected:
     const double *yData() const;
 
 private:
-    int hunt(const double x) const;
-    int bisect(const double x) const;
+    int hunt(double x) const;
+    int bisect(double x) const;
 
     Eigen::VectorXd m_x;
     Eigen::VectorXd m_y;

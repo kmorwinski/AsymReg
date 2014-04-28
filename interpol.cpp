@@ -14,7 +14,7 @@ BaseInterpol::BaseInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, i
     m_indexThreshold = std::min(1, (int)pow((double)m_N, .25));
 }
 
-int BaseInterpol::hunt(const double x) const
+int BaseInterpol::hunt(double x) const
 {
     if ((m_N < 2) || (m_M < 2) || (m_M > m_N))
         throw("hunt size error");
@@ -79,7 +79,7 @@ double BaseInterpol::interpol(double x) const
     return rawinterpol(kLower, x);
 }
 
-int BaseInterpol::bisect(const double x) const
+int BaseInterpol::bisect(double x) const
 {
     const double *xd = m_x.data();
 
