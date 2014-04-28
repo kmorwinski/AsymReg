@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     std::fstream fs;
     fs.open(DATA_FILE, std::fstream::in);
     if (fs.is_open()) {
-        fs >> zMat.format2(EIGEN_FMT_CSV);
+        fs >> zMat.format2(EIGEN_IOFMT_CSV);
         print_line_end("\" ok!");
     } else {
         zMat.setZero();
@@ -96,4 +96,3 @@ void set_fpu (unsigned int mode)
 {
     asm("fldcw %0" : : "m" (*&mode));
 }
-

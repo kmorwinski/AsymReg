@@ -624,7 +624,7 @@ void MainWindow::saveDataSource(const QString &fileName, bool reload)
     std::fstream fs;
     fs.open(fileName.toAscii().data(), std::fstream::out | std::fstream::trunc);
     Q_ASSERT(fs.is_open());
-    fs << zMat.format(EIGEN_FMT_CSV);
+    fs << zMat.format(EIGEN_IOFMT_CSV);
     fs.close();
 
     discardDataSource();
@@ -746,7 +746,7 @@ void MainWindow::selectDataSource(QAction *action)
         try {
             fs.open(fileName.toAscii().data(), std::fstream::in);
             fs.exceptions(std::ios_base::failbit | std::ios_base::badbit); // throw execptions on bad and fail
-            fs >> zMat.format2(EIGEN_FMT_CSV);
+            fs >> zMat.format2(EIGEN_IOFMT_CSV);
             fs.close();
         } catch (const std::ios_base::failure &e) {
             exceptionString = tr("Caught an ios_base::failure.\n"
