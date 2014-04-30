@@ -1,13 +1,13 @@
 #ifndef ASYMREG_H_
 #define ASYMREG_H_
 
-#define ASYMREG_DATSRC_SIZE  11
+#define ASYMREG_DATSRC_SIZE  10
 
 #define ASYMREG_GRID_SIZE  200
 
-#define ASYMREG_RECORDING_ANGLES  3
+#define AR_NUM_REC_ANGL  4
 
-#define AR_SAMP  1.0
+#define AR_TRGT_SMPL_RATE  0.5
 
 #include "eigen.h"
 
@@ -19,9 +19,9 @@ public:
     inline static BilinearInterpol *sourceFunction()
     { return m_sourceFunc; }
 
-    static Eigen::MatrixXd sourceFunctionPlotData(Duration *time = nullptr);
+    static MatrixXd sourceFunctionPlotData(Duration *time = nullptr);
 
-    static void createSourceFunction(const Eigen::MatrixXd &srcDat);
+    static void createSourceFunction(const MatrixXd &srcDat);
 
     static void generateDataSet(Duration *time = nullptr);
 
@@ -29,6 +29,7 @@ private:
     static void setSourceFunction(BilinearInterpol *func);
 
     static BilinearInterpol *m_sourceFunc;
+    static RowVectorXd m_dataSet[AR_NUM_REC_ANGL];
 };
 
 #endif // ASYMREG_H_
