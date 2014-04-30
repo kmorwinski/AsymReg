@@ -5,7 +5,7 @@
 #include "asymreg.h"
 #include "duration.h"
 
-#define DATA_FILE  "../data/data-11x11.csv" // TODO: read from QSettings? or from argv?
+#define DATA_FILE  "../data/recang-testdata-10x10.csv" // TODO: read from QSettings? or from argv?
 
 using ts = std::string; // ts (ToString) is much shorter
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     print_end();
 /* -------------------------------------------------------------------- */
     print_begin();
-    print_line_begin(ts("Loading data from file: \"") + DATA_FILE);
+    print_line_begin(ts("Importing data from file: \"") + DATA_FILE);
 
     MatrixXd zMat(ASYMREG_DATSRC_SIZE, ASYMREG_DATSRC_SIZE);
     std::fstream fs;
@@ -43,8 +43,8 @@ int main(int argc, char **argv)
         print_line_end("\" failed!");
     }
 
-    print_line("source data: ");
-    std::cout << zMat << std::endl;
+    std::cout << "source data =" << std::endl
+              << zMat << std::endl << std::endl;
     print_end();
 
     AsymReg::createSourceFunction(zMat);
@@ -55,8 +55,8 @@ int main(int argc, char **argv)
     Duration dt;
     AsymReg::generateDataSet(&dt);
 
-    print_line_begin("done (time used: ");
-    std::cout << dt.value() << dt.unit() << ")";
+    print_line_begin("...done (time used: ");
+    std::cout << dt.value() << dt.unit() << ").";
     print_line_end();
     print_end();
 /* -------------------------------------------------------------------- */
