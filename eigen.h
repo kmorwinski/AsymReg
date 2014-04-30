@@ -14,7 +14,8 @@
 #include "eigen_io.h"
 #include "eigen_iterator.h"
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 using namespace Eigen;
 
