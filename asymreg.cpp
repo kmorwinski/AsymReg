@@ -7,15 +7,59 @@
 #include "eigen.h"
 #include "duration.h"
 #include "interpol.h"
+#include "radonoperator.h"
 
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
+
+class SrcFuncAccOp {
+public:
+    SrcFuncAccOp(BilinearInterpol *func)
+        : m_func(func) {}
+
+    double operator()(const Matrix<double, 2, 1> &pt)
+    {
+        /* tr:
+         * ===
+         * coordinate transformation from target coord. system (r,s) \in [0,1]^2
+         * to physical coord. system (x,y) = [0,10]^2
+         * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
+         *  => tr(r,s) = (3*r+5, 3*s+5)
+         *
+         * Todo: documents want (r,s) = D^1  (unit disc)
+         */
+        static Transform<double, 2, Affine> tr = Translation2d(5, 5) * Scaling(3.0);
+
+        /* translate pt to phys. coord. system: */
+        Matrix<double, 2, 1> xy = tr * pt;
+
+        /* get data from source-function at (x,y):*/
+        double ret = m_func->interpol(xy.coeffRef(0), xy.coeffRef(1));
+
+        return ret;
+    }
+
+private:
+    BilinearInterpol *m_func;
+};
 
 // init static members:
 BilinearInterpol *AsymReg::m_sourceFunc(nullptr);
 RowVectorXd AsymReg::m_dataSet[AR_NUM_REC_ANGL];
 
 // function implementations:
+/**
+ * @brief Returns [-1,1] as integration boundaries for Radon-Transform.
+ * @param in (unused)
+ * @param lower Pointer to lower boundary variable.
+ * @param upper Pointer to upper boundary variable.
+ */
+void squareBound(double /*in*/, double *lower, double *upper)
+{
+    *lower = -1.;
+    *upper = 1.;
+}
+
 void AsymReg::createSourceFunction(const MatrixXd &srcDat)
 {
     VectorXd xVec = VectorXd::LinSpaced(ASYMREG_DATSRC_SIZE, 0., 10.);
@@ -53,61 +97,22 @@ void AsymReg::generateDataSet(Duration *time)
     Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
     Sigma.row(1) = Phi.sin(); // [sin(phi_0), sin(phi_1), ... , sin(phi_n)]
 
-    /* rot90:
-     * ======
-     * Rotation of 90° to get perpendicular angles.
-     * Rotation2D class creates rot. matrix internally
-     * Todo: matrix is created on every "rot90 * ..." operation.
-     *       save rot-Matrix or create own one
-     */
-    Rotation2Dd rot90(M_PI_2); // M_PI/2
-
     const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
-    static_assert(numSamples % 2, "only values for AR_TRGT_SMPL_RATE with uneven result of \"2/AR_TRGT_SMPL_RATE + 1\" are allowed");
-
-    /* R:
-     * ==
-     * Discrete samples of r-axis (target coord. system)
-     * The basis for this sampling is the value defined in AR_TRGT_SMPL_RATE
-     * R_i = -1 + i * numsamples, where numsamples = (2/AR_TRGT_SMPL_RATE) + 1
-     *
-     * TODO: use grid size (like Plotter) as calculation basis
-     */
-    RowVectorXd R = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
+    static_assert(numSamples % 2, "only values for AR_TRGT_SMPL_RATE with uneven"
+                                  "result of \"(2/AR_TRGT_SMPL_RATE) + 1\" are allowed");
 
     /* S:
      * ==
      * Discrete samples of s-axis (target coord. system)
-     * (see above)
-     */
-    const RowVectorXd &S = R; // simply a ref to R because we use the same AR_SAMP
-
-    //std::cout << "R =" << std::endl << R << std::endl << std::endl;
-    //std::cout << "S =" << std::endl << S << std::endl << std::endl;
-
-    Matrix<double, 2, numSamples> IntLines[numSamples];
-    Matrix<double, 1, numSamples> IntData[N];
-
-    /* tr:
-     * ===
-     * coordinate transformation from target coord. system (r,s) \in [0,1]^2
-     * to physical coord. system (x,y) = [0,10]^2
-     * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
-     *  => tr(r,s) = (3*r+5, 3*s+5)
+     * The basis for this sampling is the value defined in AR_TRGT_SMPL_RATE
+     * S_i = -1 + i * numsamples, for i=0,1,2,... , and
+     * where numsamples = (2/AR_TRGT_SMPL_RATE) + 1
      *
-     * Todo: documents want (r,s) = D^1  (unit disc)
+     * TODO: use grid size (like Plotter) as calculation basis
      */
-    Transform<double, 2, Affine> tr = Translation2d(5, 5) * Scaling(3.0);
+    RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
 
-    /* Trapez:
-     * =======
-     * Vector containing the coefficients for the extended trapezoidal rule.
-     * Trapez = [1/2*numSamples, 1/numSamples, ..., 1/numSamples, 1/2*numSamples]
-     */
-    Matrix<double, numSamples, 1> Trapez;
-    Trapez.setConstant(1./numSamples);
-    Trapez(0) *= .5;
-    Trapez(numSamples-1) *= .5;
+    //std::cout << "S =" << std::endl << S << std::endl << std::endl;
 
     /* iterate over all rec. angles: */
     for (Index n = 0; n < N; ++n) {
@@ -115,43 +120,21 @@ void AsymReg::generateDataSet(Duration *time)
 
         Array<double, 1, numSamples> Integral; // temporary vector for integrated data
 
-        /* LineOrigin:
-         * ===========
-         * Standard line which crosses the origin: r*sigma^{\perp} for r=-1,...,1
+        /* Radon:
+         * ======
+         * Radon Operator
+         * Create an Instance of our Radon-Operator to calculate Schlieren Data.
+         * This Instance uses class SrcFuncAccOp as an interface for
+         * translation & data Acces to our BilinearInterpol-class.
+         * Integration boundaries of r-Axis is set to [-1,1].
          */
-        Matrix<double, 2, numSamples> LineOrigin = rot90 * Sigma.col(n) * R;
+        SrcFuncAccOp sfao(sourceFunction());
+        RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
+                Radon(sfao, squareBound, Sigma.col(n));
 
-        /* translate LineOrigin along projection of
-         * s * sigma_n, for s=-1,...,1
-         */
-        for (Index j = 0; j < numSamples; ++j) {
-            IntLines[j] = LineOrigin;
-
-            if (S(j) != 0.)
-                IntLines[j].colwise() += S(j) * Sigma.col(n);
-
-            //std::cout << "s_" <<  j << " = " << S(j) << std::endl
-            //          << IntLines[j] << std::endl;
-
-            /* translate calculated lines to phys. coord. system: */
-            IntLines[j] = tr * IntLines[j];
-
-            //std::cout << "translated to physical coords: " << std::endl
-            //          << IntLines[j] << std::endl << std::endl;
-
-            /* get data from source-function: */
-            for (int k = 0; k < IntLines[j].cols(); ++k)
-                IntData[n](0,k) = sourceFunction()->interpol(IntLines[j](0,k), IntLines[j](1,k));
-
-            //std::cout << "data to be integrated = " << std::endl
-            //          << IntData[n] << std::endl << std::endl;
-
-            /* calculate trapezoidal: */
-            Integral(j) = IntData[n] * Trapez;
-
-            //std::cout << "integral =" << std::endl
-            //          << m_dataSet[n](j) << std::endl << std::endl;
-        }
+        /* iterate over all entries in vector S: */
+        for (Index j = 0; j < numSamples; ++j)
+            Integral(j) = Radon(S(j)); // perform Radon-Transform for s_j
 
         /* finally square each entry and save as dataSet for angle phi_n: */
         m_dataSet[n] = Integral.square();
@@ -169,7 +152,7 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-MatrixXd AsymReg::sourceFunctionPlotData(Duration *time)
+Matrix<double, Dynamic, Dynamic> AsymReg::sourceFunctionPlotData(Duration *time)
 {
     assert(m_sourceFunc != nullptr);
 
