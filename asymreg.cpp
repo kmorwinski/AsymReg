@@ -12,13 +12,33 @@
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
 
+/**
+ * @brief Little helper class to transform coordinates from target
+ *        to physical coord. system and get data from Asymreg::sourceFunction().
+ */
 class SrcFuncAccOp {
 public:
     SrcFuncAccOp(BilinearInterpol *func)
         : m_func(func) {}
 
-    double operator()(const Matrix<double, 2, 1> &pt)
+    /**
+     * @brief Pass a 2D vector or 'list' of 2D vectors and get source-function data in return.
+     * The given points @a pts are supposed to be in the target coord. system and are
+     * therefore transformed as described below in the code.
+     * After that the BilinearInterpol class is queried for every point and all values
+     * are returned as a vector.
+     * @param pts 2D Vector or Matrix/Array where each column represents a 2D Vector
+     * @return Row-Vector with data values
+     */
+    template <typename Derived>
+    Matrix<typename Derived::Scalar, 1, Dynamic> operator()(const EigenBase<Derived> &pts) const
     {
+        typedef typename Derived::Index Index;
+        typedef typename Derived::Scalar Scalar;
+
+        EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 2,
+                            THIS_METHOD_IS_ONLY_FOR_OBJECTS_OF_A_SPECIFIC_SIZE);
+
         /* tr:
          * ===
          * coordinate transformation from target coord. system (r,s) \in [0,1]^2
@@ -28,13 +48,15 @@ public:
          *
          * Todo: documents want (r,s) = D^1  (unit disc)
          */
-        static Transform<double, 2, Affine> tr = Translation2d(5, 5) * Scaling(3.0);
+        static Transform<Scalar, 2, Affine> tr = Translation2d(5, 5) * Scaling(3.0);
 
-        /* translate pt to phys. coord. system: */
-        Matrix<double, 2, 1> xy = tr * pt;
+        /* translate pts to phys. coord. system: */
+        Matrix<Scalar, 2, Dynamic> xys = tr * pts;
 
         /* get data from source-function at (x,y):*/
-        double ret = m_func->interpol(xy.coeffRef(0), xy.coeffRef(1));
+        Matrix<Scalar, 1, Dynamic> ret(xys.cols()); // init with correct size, even if size is 1
+        for (Index i = 0; i < xys.cols(); ++i)
+            ret[i] = m_func->interpol(xys(0,i), xys(1,i));
 
         return ret;
     }

@@ -4,6 +4,8 @@
 #include "eigen.h"
 #include "asymreg.h"
 
+#include <map>
+
 template <typename Func, typename Boundary>
 class RadonOperator
 {
@@ -37,14 +39,11 @@ public:
 
         //std::cout << "R =" << std::endl << R << std::endl << std::endl;
 
-        /* rot90:
+        /* Rot90:
          * ======
          * Rotation of 90° to get perpendicular angle.
-         * Rotation2D class creates rot. matrix internally
-         * Todo: matrix is created on every "rot90 * ..." operation.
-         *       save rot-Matrix or create own one
          */
-        Rotation2Dd rot90(M_PI_2); // M_PI/2
+        static Matrix<double, 2, 2> Rot90 = Rotation2Dd(M_PI_2).toRotationMatrix(); // M_PI/2
 
         /* Line:
          * =====
@@ -54,15 +53,13 @@ public:
          * Second part of equation:
          *  - translate Line along projection of s * sigma_n
          */
-        Matrix<double, 2, Dynamic> Line = (rot90 * m_Sigma * R).colwise() + s * m_Sigma;
+        Matrix<double, 2, Dynamic> Line = (Rot90 * m_Sigma * R).colwise() + s * m_Sigma;
 
         //std::cout << "Line(s=" << s << ") = " << std::endl
         //          << Line << std::endl;
 
         /* gather data along Line: */
-        Matrix<double, 1, Dynamic> IntData(numSamples);
-        for (int k = 0; k < Line.cols(); ++k)
-            IntData(0,k) = m_Func(Line.col(k));
+        Matrix<double, 1, Dynamic> IntData = m_Func(Line);
 
         //std::cout << "data to be integrated = " << std::endl
         //          << IntData[n] << std::endl << std::endl;
@@ -71,10 +68,19 @@ public:
          * =======
          * Vector containing the coefficients for the extended trapezoidal rule.
          * Trapez = [1/(2*numSamples), 1/numSamples, ..., 1/numSamples, 1/(2*numSamples)]
+         * (Trapez-vectors are cached in std::map to speed up)
          */
-        Matrix<double, Dynamic, 1> Trapez = Matrix<double, Dynamic, 1>::Constant(numSamples, 1./numSamples);
-        Trapez(0) *= .5;
-        Trapez(numSamples-1) *= .5;
+        static std::map<int, Matrix<double, Dynamic, 1> > trapezMap;
+        Matrix<double, Dynamic, 1> &Trapez = trapezMap.find(numSamples)->second;
+
+        /* Found vector has size 0? It does not exist is map, so we build and add it: */
+        if (Trapez.size() == 0) {
+            Trapez = Matrix<double, Dynamic, 1>::Constant(numSamples, 1./numSamples);
+            Trapez(0) *= .5;
+            Trapez(numSamples-1) *= .5;
+
+            trapezMap[numSamples] = Trapez; // add to map for next time
+        }
 
         /* calculate trapezoidal: */
         double ret = IntData * Trapez; // mult. vectors [1 x numSamples]*[numSamples x 1]^T
