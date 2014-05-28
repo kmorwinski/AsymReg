@@ -41,6 +41,7 @@ set(asymreg_COMMON_SRCS
 )
 
 set(asymreg_COMMON_HDRS
+    backprojection.h
     eigen.h
     eigen_addons.h
     eigen_iterator.h
