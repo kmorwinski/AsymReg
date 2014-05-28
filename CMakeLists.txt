@@ -1,8 +1,12 @@
+# CMake Project
 project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 set(asymreg_cl_BIN "${asymreg_BIN}-cl")
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+    add_definitions(-DNDEBUG -DQT_NO_DEBUG) # skip all assertions, etc.
+endif()
 
 # C++11 Support
 include(CXX11)
