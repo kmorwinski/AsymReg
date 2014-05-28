@@ -66,6 +66,62 @@ private:
     BilinearInterpol *m_func;
 };
 
+template<class Interpol>
+class TrgtFuncAccOp
+{
+public:
+    template <typename Derived>
+    TrgtFuncAccOp(const EigenBase<Derived> &dataValues)
+    {
+        EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived); // assert if we call c'tor with a matrix
+
+        Matrix<typename Derived::Scalar, 1, Dynamic> x(dataValues);
+        x.setLinSpaced(dataValues.size(), -1, 1);
+
+        m_interpol = new Interpol(x, dataValues);
+    }
+
+    template <typename Scalar>
+    Scalar operator()(const Scalar s) const
+    {
+        //typedef typename Derived::Index Index;
+        //typedef typename Derived::Scalar Scalar;
+
+        //EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 2,
+        //                    THIS_METHOD_IS_ONLY_FOR_OBJECTS_OF_A_SPECIFIC_SIZE);
+
+        /* trInv:
+         * ======
+         * Inverse coordinate transformation from target coord. system
+         * (r,s) \in [0,1]^2 to physical coord. system (x,y) = [0,10]^2
+         * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
+         *  => tr(r,s) = (3*r+5, 3*s+5)
+         *  => trInv(x,y) = tr.inverse()(x,y) = (0.333*[x-5], 0.333*[y-5])
+         *
+         * Todo: documents want (r,s) = D^1  (unit disc)
+         */
+        static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+
+        //std::cout << "trInv = " << std::endl
+        //             << trInv.linear() << std::endl << std::endl;
+
+        /* translate pts to phys. coord. system: */
+        Vector2d v(s, Scalar(0));
+        Scalar t = (trInv.linear() * v)(0);
+
+        if ((t < -1.) || (t > 1.))
+            return Scalar(0);
+
+        /* get data from source-function at (x,y):*/
+        Scalar ret = m_interpol->interpol(v.coeffRef(0));
+
+        return ret;
+    }
+
+private:
+    Interpol *m_interpol;
+};
+
 // init static members:
 BilinearInterpol *AsymReg::m_sourceFunc(nullptr);
 RowVectorXd AsymReg::m_DataSet[AR_NUM_REC_ANGL];
