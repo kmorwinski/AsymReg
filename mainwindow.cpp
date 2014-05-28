@@ -508,15 +508,13 @@ void MainWindow::loadDataSourceToTableWidget()
 {
     m_dataSourceTableWidget->blockSignals(true); // do not trigger 'itemChanged'-Signal
 
-    int rows = zMat.rows();
-    int cols = zMat.cols();
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < cols; ++c) {
+    for (int r = 0; r < zMat.rows(); ++r) {
+        for (int c = 0; c < zMat.cols(); ++c) {
             QTableWidgetItem *item = m_dataSourceTableWidget->item(r, c);
             bool needNew = (item == nullptr);
             if (needNew)
                 item = new QTableWidgetItem;
-            const QString v = QString("%L1").arg(zMat.coeff(r,c), 0, 'f');
+            QString v = QString("%L1").arg(zMat.coeff(r,c), 0, 'f'); // coeff() method is always const Scalar& (...) const
             item->setData(Qt::DisplayRole, v);
             item->setData(Qt::BackgroundRole, QVariant()); // remove green color
             if (needNew)
@@ -760,7 +758,7 @@ void MainWindow::selectDataSource(QAction *action)
 
         // did something fail?
         // (Exceptions are only for debugging)
-        if (fs.fail()) {
+        if (fs.fail() || !exceptionString.isEmpty()) {
             // prepare information:
             QFileInfo fileInfo(fileName);
             QString title = tr("Import Data Source - %1").arg(qApp->applicationName());
