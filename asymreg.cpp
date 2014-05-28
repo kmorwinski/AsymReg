@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "backprojection.h"
 #include "eigen.h"
 #include "duration.h"
 #include "interpol.h"
@@ -125,6 +126,7 @@ private:
 // init static members:
 BilinearInterpol *AsymReg::m_sourceFunc(nullptr);
 RowVectorXd AsymReg::m_DataSet[AR_NUM_REC_ANGL];
+Matrix<double, Dynamic, Dynamic> AsymReg::m_Result;
 
 // function implementations:
 /**
@@ -229,6 +231,71 @@ void AsymReg::generateDataSet(Duration *time)
 
     if (time != nullptr)
         *time = t2 - t1;
+}
+
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
+{
+    typedef typename MatrixXd::Index Index;
+
+    Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    Xdot.setZero(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    Matrix<double, Dynamic, Dynamic> Xn = sourceFunctionPlotData();
+    static Matrix<double, Dynamic, Dynamic> Noise =
+            Matrix<double, Dynamic, Dynamic>::Random(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    std::cout << "Noise = " << std::endl
+              << Noise << std::endl << std::endl;
+    Xn += 0.01 * Noise;
+
+    Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
+                Sequential, ASYMREG_GRID_SIZE, 0., 10.);
+
+    const int N = AR_NUM_REC_ANGL;
+    ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
+    MatrixXd Sigma(2, N);
+    Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
+    Sigma.row(1) = Phi.sin(); // [sin(phi_0), sin(phi_1), ... , sin(phi_n)]
+
+    int run = 0;
+        do {
+        for (int n = 0; n < Sigma.cols(); ++n) {
+            SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
+            RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
+                    Radon(sfao, squareBound, Sigma.col(n));
+
+            const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
+            RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
+            Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
+            for (Index j = 0; j < S.cols(); ++j)
+                RadonData[j] = Radon(S.coeffRef(j));
+
+            Matrix<double, 1, numSamples> Diff = m_DataSet[n];
+            Diff -= RadonData.cwiseProduct(RadonData);
+            Diff = RadonData.cwiseProduct(Diff);
+
+            TrgtFuncAccOp<LinearInterpol> tfao(Diff);
+            Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
+
+            Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+            for (const double &xsi1 : Xsi) {
+                for (const double &xsi2 : Xsi) {
+                    Matrix<double, 2, 1> vec;
+                    vec << xsi1, xsi2;
+
+                    Xn_1(xsi1,xsi2) = R_adjoint(vec);
+                }
+            }
+
+            const double h = 0.1;
+            Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
+        }
+
+        std::cout << "Xdot = " << std::endl
+                  << Xdot << std::endl << std::endl;
+    } while (++run > 1);
+
+    /* Xdot = Xn + 2hR*{R(Xn)[y - F(Xn)]} */
+    m_Result = Xdot;
+    return m_Result;
 }
 
 Matrix<double, Dynamic, Dynamic> AsymReg::sourceFunctionPlotData(Duration *time)

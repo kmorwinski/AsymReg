@@ -25,11 +25,14 @@ public:
 
     static void generateDataSet(Duration *time = nullptr);
 
+    static Matrix<double, Dynamic, Dynamic> &regularize(Duration *time = nullptr);
+
 private:
     static void setSourceFunction(BilinearInterpol *func);
 
     static BilinearInterpol *m_sourceFunc;
     static RowVectorXd m_DataSet[AR_NUM_REC_ANGL];
+    static Matrix<double, Dynamic, Dynamic> m_Result;
 };
 
 #endif // ASYMREG_H_
