@@ -6,6 +6,10 @@
 
 #include <map>
 
+/**
+ * @brief Radon Operator
+ * This template class behaves like the Radon Operator.
+ */
 template <typename Func, typename Boundary>
 class RadonOperator
 {

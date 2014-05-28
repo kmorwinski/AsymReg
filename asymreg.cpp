@@ -52,6 +52,7 @@ public:
 
         /* translate pts to phys. coord. system: */
         Matrix<Scalar, 2, Dynamic> xys = tr * pts;
+        eigen_assert((xys.minCoeff() >= 0.0) && (xys.maxCoeff() <= 10.0));
 
         /* get data from source-function at (x,y):*/
         Matrix<Scalar, 1, Dynamic> ret(xys.cols()); // init with correct size, even if size is 1
@@ -67,7 +68,7 @@ private:
 
 // init static members:
 BilinearInterpol *AsymReg::m_sourceFunc(nullptr);
-RowVectorXd AsymReg::m_dataSet[AR_NUM_REC_ANGL];
+RowVectorXd AsymReg::m_DataSet[AR_NUM_REC_ANGL];
 
 // function implementations:
 /**
@@ -147,8 +148,8 @@ void AsymReg::generateDataSet(Duration *time)
          * Radon Operator
          * Create an Instance of our Radon-Operator to calculate Schlieren Data.
          * This Instance uses class SrcFuncAccOp as an interface for
-         * translation & data Acces to our BilinearInterpol-class.
-         * Integration boundaries of r-Axis is set to [-1,1].
+         * translation & data acces to our BilinearInterpol-class.
+         * Integration boundaries of r-Axis is set to [-1,1] by squareBound().
          */
         SrcFuncAccOp sfao(sourceFunction());
         RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
@@ -159,14 +160,14 @@ void AsymReg::generateDataSet(Duration *time)
             Integral(j) = Radon(S(j)); // perform Radon-Transform for s_j
 
         /* finally square each entry and save as dataSet for angle phi_n: */
-        m_dataSet[n] = Integral.square();
+        m_DataSet[n] = Integral.square();
 
     }
     auto t2 = hrc::now(); // Stop timing
 
     std::cout << "yDelta_n(s) = " << std::endl;
     for (Index n = 0; n < N; ++n)
-        std::cout << n << ": " << m_dataSet[n] << std::endl;
+        std::cout << n << ": " << m_DataSet[n] << std::endl;
 
     std::cout << std::endl;
 

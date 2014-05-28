@@ -41,6 +41,7 @@ set(asymreg_COMMON_HDRS
     eigen_addons.h
     eigen_iterator.h
     eigen_io.h
+    radonoperator.h
 )
 
 set(asymreg_GUI_SRCS

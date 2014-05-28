@@ -29,7 +29,7 @@ private:
     static void setSourceFunction(BilinearInterpol *func);
 
     static BilinearInterpol *m_sourceFunc;
-    static RowVectorXd m_dataSet[AR_NUM_REC_ANGL];
+    static RowVectorXd m_DataSet[AR_NUM_REC_ANGL];
 };
 
 #endif // ASYMREG_H_
