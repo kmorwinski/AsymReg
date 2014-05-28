@@ -60,7 +60,17 @@ int main(int argc, char **argv)
     print_line_end();
     print_end();
 /* -------------------------------------------------------------------- */
+    print_begin();
+    print_line("Running Asymptotical Regularization...");
 
+    Duration dt2;
+    AsymReg::regularize(&dt2);
+
+    print_line_begin("...done (time used: ");
+    std::cout << dt2.value() << dt2.unit() << ").";
+    print_line_end();
+    print_end();
+/* -------------------------------------------------------------------- */
     return 0;
 }
 

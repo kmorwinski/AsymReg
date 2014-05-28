@@ -608,6 +608,15 @@ void MainWindow::runAsymReg()
         plotDataSource();
 
     AsymReg::generateDataSet();
+
+    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize();
+
+    Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
+
+    ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
+    plotter.setData(X);
+
+    m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
 }
 
 void MainWindow::saveDataSource()
