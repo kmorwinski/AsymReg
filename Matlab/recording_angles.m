@@ -42,7 +42,7 @@ s=-1:sSAMP:1;
 % iterate over all recording angles
 for j=1:N
     sigma=sigmas(:,j); % set current angle
-    line1=sigmasT(:,j)*r; % standard vectors for $r*sigmaT$
+    lineOrigin=sigmasT(:,j)*r; % standard vectors for $r*sigmaT$
 
     if (PLOT)
         % create new figure:
@@ -56,22 +56,22 @@ for j=1:N
     end
 
     %line=[]; %init matrix w/o preallocation
-    line=zeros(2,length(r),length(s)); %preallocate matrix
+    lines=zeros(2,length(r),length(s)); %preallocate matrix
     for i=1:length(s)
         % $ L(s) = s_i*sigma_j + r*sigma_j^{T} $
-        line(:,:,i)=[line1(1,:)+s(i)*sigma(1) ; line1(2,:)+s(i)*sigma(2)];
+        lines(:,:,i)=[lineOrigin(1,:)+s(i)*sigma(1) ; lineOrigin(2,:)+s(i)*sigma(2)];
 
         if (PLOT)
             %plot line and sample-points:
-            scatter(line(1,:,i),line(2,:,i));
-            plot(line(1,:,i),line(2,:,i),'LineWidth',2);
+            scatter(lines(1,:,i),lines(2,:,i));
+            plot(lines(1,:,i),lines(2,:,i),'LineWidth',2);
         end 
 
         if (PRINT)
             % print line for sample point s:
             %str=;
             display(sprintf('** sample point s_%d = %.2f:',i,s(i)));
-            display(line(:,:,i));
+            display(lines(:,:,i));
         end
     end
     
