@@ -10,6 +10,11 @@
 #include "interpol.h"
 #include "radonoperator.h"
 
+// defines:
+#define STDOUT_MATRIX(MAT) \
+    std::cout << #MAT" =" << std::endl \
+              << MAT << std::endl << std::endl
+
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
 
@@ -76,21 +81,18 @@ public:
     {
         EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived); // assert if we call c'tor with a matrix
 
-        Matrix<typename Derived::Scalar, 1, Dynamic> x(dataValues);
-        x.setLinSpaced(dataValues.size(), -1, 1);
+        typedef typename Derived::Scalar Scalar;
 
-        m_interpol = new Interpol(x, dataValues);
+        Matrix<Scalar, 1, Dynamic> X =
+                Matrix<Scalar, 1, Dynamic>::LinSpaced(Sequential, dataValues.size(),
+                                                      -1, 1);
+
+        m_interpol = new Interpol(X, dataValues);
     }
 
     template <typename Scalar>
     Scalar operator()(const Scalar s) const
     {
-        //typedef typename Derived::Index Index;
-        //typedef typename Derived::Scalar Scalar;
-
-        //EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 2,
-        //                    THIS_METHOD_IS_ONLY_FOR_OBJECTS_OF_A_SPECIFIC_SIZE);
-
         /* trInv:
          * ======
          * Inverse coordinate transformation from target coord. system
@@ -103,18 +105,18 @@ public:
          */
         static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
 
-        //std::cout << "trInv = " << std::endl
-        //             << trInv.linear() << std::endl << std::endl;
+        //STDOUT_MATRIX(trInv);
 
-        /* translate pts to phys. coord. system: */
+        /* translate s to target coord. system: */
         Vector2d v(s, Scalar(0));
-        Scalar t = (trInv.linear() * v)(0);
+        Scalar t = (trInv * v)(0);
 
+        /* check out of bound, SchlierenData is only valid in [-1,1]: */
         if ((t < -1.) || (t > 1.))
             return Scalar(0);
 
-        /* get data from source-function at (x,y):*/
-        Scalar ret = m_interpol->interpol(v.coeffRef(0));
+        /* get data at s:*/
+        Scalar ret = m_interpol->interpol(t);
 
         return ret;
     }
@@ -239,12 +241,16 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
 
     Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     Xdot.setZero(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    //STDOUT_MATRIX(Xdot);
+
     Matrix<double, Dynamic, Dynamic> Xn = sourceFunctionPlotData();
-    static Matrix<double, Dynamic, Dynamic> Noise =
-            Matrix<double, Dynamic, Dynamic>::Random(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
-    std::cout << "Noise = " << std::endl
-              << Noise << std::endl << std::endl;
-    Xn += 0.01 * Noise;
+    Matrix<double, Dynamic, Dynamic> Noise
+            //= Matrix<double, Dynamic, Dynamic>::Ones(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+            = Matrix<double, Dynamic, Dynamic>::Random(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    //STDOUT_MATRIX(Noise);
+
+    Xn += 0.1 * Noise;
+    //STDOUT_MATRIX(Xn);
 
     Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
                 Sequential, ASYMREG_GRID_SIZE, 0., 10.);
@@ -255,24 +261,28 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
     Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
     Sigma.row(1) = Phi.sin(); // [sin(phi_0), sin(phi_1), ... , sin(phi_n)]
 
+    const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
+    RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
+
     int run = 0;
-        do {
+    do {
         for (int n = 0; n < Sigma.cols(); ++n) {
             SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
             RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
                     Radon(sfao, squareBound, Sigma.col(n));
 
-            const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
-            RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
             Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
             for (Index j = 0; j < S.cols(); ++j)
                 RadonData[j] = Radon(S.coeffRef(j));
 
-            Matrix<double, 1, numSamples> Diff = m_DataSet[n];
-            Diff -= RadonData.cwiseProduct(RadonData);
-            Diff = RadonData.cwiseProduct(Diff);
+            Matrix<double, 1, numSamples> SchlierenData; // temporary vector for schlieren data
+            SchlierenData = RadonData.cwiseProduct(RadonData);
 
-            TrgtFuncAccOp<LinearInterpol> tfao(Diff);
+            Matrix<double, 1, numSamples> Diff = m_DataSet[n] - SchlierenData; // Diff = Y_delta - F(Xn)
+            Matrix<double, 1, numSamples> DiffTimesRadon = RadonData.cwiseProduct(Diff); // DiffTimesRadon = R(Xn) * Diff
+            //STDOUT_MATRIX(DiffTimesRadon);
+
+            TrgtFuncAccOp<LinearInterpol> tfao(DiffTimesRadon);
             Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
 
             Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
@@ -284,14 +294,14 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
                     Xn_1(xsi1,xsi2) = R_adjoint(vec);
                 }
             }
+            STDOUT_MATRIX(Xn_1);
 
             const double h = 0.1;
             Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
         }
 
-        std::cout << "Xdot = " << std::endl
-                  << Xdot << std::endl << std::endl;
-    } while (++run > 1);
+        STDOUT_MATRIX(Xdot);
+    } while (++run < 1);
 
     /* Xdot = Xn + 2hR*{R(Xn)[y - F(Xn)]} */
     m_Result = Xdot;
