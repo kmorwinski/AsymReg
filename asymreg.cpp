@@ -285,13 +285,13 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
             TrgtFuncAccOp<LinearInterpol> tfao(DiffTimesRadon);
             Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
 
-            Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
-            for (const double &xsi1 : Xsi) {
-                for (const double &xsi2 : Xsi) {
+            Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE); // temporary matrix for backprojected data
+            for (int k = 0; k < ASYMREG_GRID_SIZE; ++k) {
+                for (int l = 0; l < ASYMREG_GRID_SIZE; ++l) {
                     Matrix<double, 2, 1> vec;
-                    vec << xsi1, xsi2;
+                    vec << Xsi(k), Xsi(l);
 
-                    Xn_1(xsi1,xsi2) = R_adjoint(vec);
+                    Xn_1(k,l) = R_adjoint(vec);
                 }
             }
             STDOUT_MATRIX(Xn_1);
@@ -315,14 +315,10 @@ Matrix<double, Dynamic, Dynamic> AsymReg::sourceFunctionPlotData(Duration *time)
     auto t1 = hrc::now();
     VectorXd X = VectorXd::LinSpaced(Sequential, ASYMREG_GRID_SIZE, 0., 10.);
     MatrixXd Z(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
-    MatrixXd::Index i = 0;
-    for (double &x : X) {
-        MatrixXd::Index j = 0;
-        for (double &y : X) {
-            Z(i,j) = m_sourceFunc->interpol(x,y);
-            j++;
-        }
-        i++;
+
+    for (int i = 0; i < X.rows(); ++i) {
+        for (int j = 0; j < X.rows(); ++j)
+            Z(i,j) = m_sourceFunc->interpol(X(i),X(j));
     }
     auto t2 = hrc::now();
 

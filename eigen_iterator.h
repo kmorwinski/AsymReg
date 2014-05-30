@@ -2,7 +2,7 @@
 #define EIGEN_ITERATOR_H
 
 namespace Eigen {
-
+#if 0
 // support range-based for-loops (C++11):
 //   (end() function works only for vectors, so we
 //   only allow vector types!!!)
@@ -31,7 +31,7 @@ _Scalar *end(Matrix<_Scalar, _Rows, _Cols, _Options> &mat)
         return &mat.data()[mat.rows()-1];
     return &mat.data()[_Rows-1];
 }
-
+#endif // 0
 } // namespace Eigen
 
 #endif // EIGEN_ITERATOR_H
