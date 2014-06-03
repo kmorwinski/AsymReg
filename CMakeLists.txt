@@ -4,9 +4,10 @@ cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 set(asymreg_cl_BIN "${asymreg_BIN}-cl")
-if(CMAKE_BUILD_TYPE STREQUAL Release)
-    add_definitions(-DNDEBUG -DQT_NO_DEBUG) # skip all assertions, etc.
-endif()
+
+#check if CMAKE_BUILD_TYPE is valid
+include(CheckBuildType)
+check_build_type()
 
 # C++11 Support
 include(CXX11)
@@ -24,6 +25,10 @@ if(QTIOCOMPRESSOR_FOUND)
     add_definitions(-DQT_HAS_IOCOMPRESSOR)
 endif()
 find_package(QJSON 0.8.1 REQUIRED)
+string(TOUPPER ${CMAKE_BUILD_TYPE} build_type)
+if(NOT ${build_type} STREQUAL DEBUG)
+    add_definitions(-DQT_NO_DEBUG) # skip all Q_ASSERT's
+endif()
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
