@@ -68,26 +68,29 @@ public:
         //std::cout << "data to be integrated = " << std::endl
         //          << IntData[n] << std::endl << std::endl;
 
+        /* Trapez vectors are cached in map using size (numSamples) as key: */
+        static std::map<int, Matrix<double, Dynamic, 1> > trapezMap;
+        auto it = trapezMap.find(numSamples);
+        if (it == trapezMap.end()) { /* no Trapez vector with appropriate size? ... */
+            /* ... then we construct one & add it to map */
+            Matrix<double, Dynamic, 1> _Trapez;
+            _Trapez.setConstant(numSamples, 1./numSamples);
+            _Trapez(0) *= .5;
+            _Trapez(numSamples-1) *= .5;
+
+            it = trapezMap.insert(it, std::make_pair(numSamples, _Trapez));
+        }
+
         /* Trapez:
          * =======
          * Vector containing the coefficients for the extended trapezoidal rule.
          * Trapez = [1/(2*numSamples), 1/numSamples, ..., 1/numSamples, 1/(2*numSamples)]
          * (Trapez-vectors are cached in std::map to speed up)
          */
-        static std::map<int, Matrix<double, Dynamic, 1> > trapezMap;
-        Matrix<double, Dynamic, 1> &Trapez = trapezMap.find(numSamples)->second;
-
-        /* Found vector has size 0? It does not exist is map, so we build and add it: */
-        if (Trapez.size() == 0) {
-            Trapez = Matrix<double, Dynamic, 1>::Constant(numSamples, 1./numSamples);
-            Trapez(0) *= .5;
-            Trapez(numSamples-1) *= .5;
-
-            trapezMap[numSamples] = Trapez; // add to map for next time
-        }
+        Matrix<double, Dynamic, 1> *Trapez = &it->second;
 
         /* calculate trapezoidal: */
-        double ret = IntData * Trapez; // mult. vectors [1 x numSamples]*[numSamples x 1]^T
+        double ret = IntData * *Trapez; // mult. vectors [1 x numSamples]*[numSamples x 1]^T
 
         //std::cout << "integral =" << std::endl
         //          << ret << std::endl << std::endl;
