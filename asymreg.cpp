@@ -15,6 +15,12 @@
     std::cout << #MAT" =" << std::endl \
               << MAT << std::endl << std::endl
 
+// constants:
+constexpr double H   = .1;              // Euler step
+constexpr int    T   =  1;              // maximum iterations for Euler method
+constexpr int    N   = AR_NUM_REC_ANGL; // number of recording angles
+constexpr double PHI = 270.;            // maximum rec. angle
+
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
 
@@ -153,7 +159,6 @@ void AsymReg::createSourceFunction(const MatrixXd &srcDat)
 
 void AsymReg::generateDataSet(Duration *time)
 {
-    const int N = AR_NUM_REC_ANGL;
     typedef typename MatrixXd::Index Index;
 
     /* Phi:
@@ -167,7 +172,7 @@ void AsymReg::generateDataSet(Duration *time)
     ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
 
     std::cout << "Using the following " << N << " recording angels:" << std::endl
-              << (Phi*180.0/M_PI).format(IOFormat(2, 0, "", "°, ", "", "", "", "°")) // comma-separated & '°' after number
+              << (Phi*PHI/M_PI).format(IOFormat(2, 0, "", "°, ", "", "", "", "°")) // comma-separated & '°' after number
               << std::endl << std::endl;
 
     auto t1 = hrc::now(); // Start timing (TODO: start before Phi, but exlude cout)
@@ -199,7 +204,7 @@ void AsymReg::generateDataSet(Duration *time)
 
     /* iterate over all rec. angles: */
     for (Index n = 0; n < N; ++n) {
-        //std::cout << std::endl << "phi_" << n << " = " << (Phi(n)*180.0/M_PI) << std::endl;
+        //std::cout << std::endl << "phi_" << n << " = " << (Phi(n)*PHI/M_PI) << std::endl;
 
         Array<double, 1, numSamples> Integral; // temporary vector for integrated data
 
@@ -257,7 +262,6 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
     Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
                 Sequential, ASYMREG_GRID_SIZE, 0., 10.);
 
-    const int N = AR_NUM_REC_ANGL;
     ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
     MatrixXd Sigma(2, N);
     Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
@@ -298,12 +302,11 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
             }
             //STDOUT_MATRIX(Xn_1);
 
-            const double h = 0.1;
-            Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
+            Xdot += 1./double(N) * (Xn + 2*H*Xn_1);
         }
 
         //STDOUT_MATRIX(Xdot);
-    } while (++run < 1);
+    } while (++run < T);
     auto t2 = hrc::now(); // Stop timing
 
     if (time != nullptr)
