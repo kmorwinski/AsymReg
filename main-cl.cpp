@@ -64,7 +64,10 @@ int main(int argc, char **argv)
     print_line("Running Asymptotical Regularization...");
 
     Duration dt2;
-    AsymReg::regularize(&dt2);
+    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(&dt2);
+
+    std::cout << "Xdot =" << std::endl
+              << Xdot << std::endl << std::endl;
 
     print_line_begin("...done (time used: ");
     std::cout << dt2.value() << dt2.unit() << ").";

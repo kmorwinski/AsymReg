@@ -241,16 +241,17 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
 
     auto t1 = hrc::now(); // Start timing
     Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
-    Xdot.setZero(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+    Xdot.setZero();
     //STDOUT_MATRIX(Xdot);
 
-    Matrix<double, Dynamic, Dynamic> Xn = sourceFunctionPlotData();
+    Matrix<double, Dynamic, Dynamic> Xn(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     Matrix<double, Dynamic, Dynamic> Noise
-            //= Matrix<double, Dynamic, Dynamic>::Ones(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
-            = Matrix<double, Dynamic, Dynamic>::Random(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+            = Matrix<double, Dynamic, Dynamic>::Ones(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+            //= Matrix<double, Dynamic, Dynamic>::Random(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     //STDOUT_MATRIX(Noise);
 
-    Xn += 0.1 * Noise;
+    //Xn = sourceFunctionPlotData()  + 0.1 * Noise; // this is easy!
+    Xn = 0.1 * Noise;                               // this one is hard!
     //STDOUT_MATRIX(Xn);
 
     Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
@@ -295,20 +296,20 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
                     Xn_1(k,l) = R_adjoint(vec);
                 }
             }
-            STDOUT_MATRIX(Xn_1);
+            //STDOUT_MATRIX(Xn_1);
 
             const double h = 0.1;
             Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
         }
 
-        STDOUT_MATRIX(Xdot);
+        //STDOUT_MATRIX(Xdot);
     } while (++run < 1);
     auto t2 = hrc::now(); // Stop timing
 
     if (time != nullptr)
         *time = t2 - t1;
 
-    /* Xdot = Xn + 2hR*{R(Xn)[y - F(Xn)]} */
+    /* Xdot = Xn + 2hR*{R(Xn)[Y - F(Xn)]} */
     m_Result = Xdot;
     return m_Result;
 }
