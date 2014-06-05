@@ -1,6 +1,4 @@
 macro(check_build_type)
-    #string(TOUPPER ${CMAKE_BUILD_TYPE} type)
-    #message(STATUS ${CMAKE_BUILD_TYPE})
 
     # user has not defined CMAKE_BUILD_TYPE:
     if("${CMAKE_BUILD_TYPE}" STREQUAL "")

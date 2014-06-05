@@ -4,10 +4,24 @@ cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 set(asymreg_cl_BIN "${asymreg_BIN}-cl")
+string(TOUPPER "${CMAKE_BUILD_TYPE}" asymreg_BUILD_TYPE)
 
-#check if CMAKE_BUILD_TYPE is valid
+#set(asymreg_OPTI "-O3") #uncomment to overwrite CMAKE_BUILD_TYPE's default compiler optimisation level
+#set(CMAKE_VERBOSE_MAKEFILE 1) # verbose compiler output
+
+# Compiler Flags
 include(CheckBuildType)
-check_build_type()
+check_build_type() #check if CMAKE_BUILD_TYPE is valid
+
+if(CMAKE_COMPILER_IS_GNUCXX AND (NOT "${asymreg_OPTI}" STREQUAL ""))
+    # set compiler optimisation level to asymreg_OPTI (if defined)
+    string(REGEX REPLACE
+           "-O[0123s]" "${asymreg_OPTI}"
+           asymreg_CXX_FLAGS
+           ${CMAKE_CXX_FLAGS_${asymreg_BUILD_TYPE}}
+    )
+    set(CMAKE_CXX_FLAGS_${asymreg_BUILD_TYPE} "${asymreg_CXX_FLAGS}")
+endif()
 
 # C++11 Support
 include(CXX11)
@@ -25,8 +39,8 @@ if(QTIOCOMPRESSOR_FOUND)
     add_definitions(-DQT_HAS_IOCOMPRESSOR)
 endif()
 find_package(QJSON 0.8.1 REQUIRED)
-string(TOUPPER ${CMAKE_BUILD_TYPE} build_type)
-if(NOT ${build_type} STREQUAL DEBUG)
+
+if(NOT ${asymreg_BUILD_TYPE} STREQUAL DEBUG)
     add_definitions(-DQT_NO_DEBUG) # skip all Q_ASSERT's
 endif()
 
