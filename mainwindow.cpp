@@ -609,10 +609,13 @@ void MainWindow::runAsymReg()
 
     AsymReg::generateDataSet();
 
-    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize();
+    Duration dur;
+    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(&dur);
+    auto dt = dur.value();
+    auto unit = dur.unit();
+    statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
-
     ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
     plotter.setData(X);
 
