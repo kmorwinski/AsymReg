@@ -239,6 +239,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
 {
     typedef typename MatrixXd::Index Index;
 
+    auto t1 = hrc::now(); // Start timing
     Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     Xdot.setZero(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
     //STDOUT_MATRIX(Xdot);
@@ -302,6 +303,10 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
 
         STDOUT_MATRIX(Xdot);
     } while (++run < 1);
+    auto t2 = hrc::now(); // Stop timing
+
+    if (time != nullptr)
+        *time = t2 - t1;
 
     /* Xdot = Xn + 2hR*{R(Xn)[y - F(Xn)]} */
     m_Result = Xdot;
