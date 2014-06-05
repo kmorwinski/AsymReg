@@ -22,7 +22,7 @@ static void set_fpu (unsigned int mode);
 int main(int argc, char **argv)
 {
     //set_fpu(0x270); // use double-precision rounding
-    std::cout << std::fixed;
+    std::cout << std::fixed; // write floating-point values in fixed-point notation
 
     print_begin();
     print_line("Asymptotical Regularization in Computer Tomographie");

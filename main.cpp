@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <QtCore/QSettings>
 #include <QtGui/QApplication>
 
@@ -7,6 +9,8 @@ Q_DECLARE_METATYPE(QAction *) // needed in MainWindow::readSettings()
 
 int main(int argc, char** argv)
 {
+    std::cout << std::fixed; // write floating-point values in fixed-point notation
+
     QCoreApplication::setApplicationName("AsymReg");
     QCoreApplication::setOrganizationDomain("uni-due.de");
 #if (defined Q_OS_WIN32) || (defined Q_OS_WIN64)
