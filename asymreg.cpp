@@ -17,7 +17,7 @@
 
 // constants:
 constexpr double H   = .1;              // Euler step
-constexpr int    T   =  1;              // maximum iterations for Euler method
+constexpr int    T   = 15;              // maximum iterations for Euler method
 constexpr int    N   = AR_NUM_REC_ANGL; // number of recording angles
 constexpr double PHI = 270.;            // maximum rec. angle
 

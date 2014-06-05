@@ -5,9 +5,9 @@
 
 #define ASYMREG_GRID_SIZE  200
 
-#define AR_NUM_REC_ANGL  4
+#define AR_NUM_REC_ANGL  50
 
-#define AR_TRGT_SMPL_RATE  0.5
+#define AR_TRGT_SMPL_RATE  0.025
 
 #include "eigen.h"
 
