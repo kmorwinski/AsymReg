@@ -19,7 +19,9 @@ public:
         typedef typename Derived::Index Index;
         typedef typename Derived::Scalar Scalar;
 
-        Scalar s = m_Sigma.transpose() * xy.derived();
+        static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+        Derived rs = trInv * xy.derived();
+        Scalar s = m_Sigma.transpose() * rs; //xy.derived();
         Scalar ret = m_Func(s);
 
         return ret;

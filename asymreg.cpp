@@ -109,13 +109,14 @@ public:
          *
          * Todo: documents want (r,s) = D^1  (unit disc)
          */
-        static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+        //static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
 
         //STDOUT_MATRIX(trInv);
 
         /* translate s to target coord. system: */
-        Vector2d v(s, Scalar(0));
-        Scalar t = (trInv * v)(0);
+        //Vector2d v(s, Scalar(0));
+        //Scalar t = (trInv * v)(0);
+        Scalar t = s;
 
         /* check out of bound, SchlierenData is only valid in [-1,1]: */
         if ((t < -1.) || (t > 1.))
