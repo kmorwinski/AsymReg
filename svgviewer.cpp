@@ -105,6 +105,11 @@ void SvgViewer::closeEvent(QCloseEvent *event)
         QString text = tr("The plot \"%1\" has not been saved.").arg(m_title);
         QString infoText = tr("Do you want to save as SVG image or discard it?");
 
+        // raise this window, otherwise the saving-dialog will be
+        // at top level and the picture might still be hidden under
+        // some other windows:
+        raise();
+
         // construct dialog:
         QMessageBox msgBox(this);
         msgBox.setWindowTitle(title);
