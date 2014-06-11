@@ -172,6 +172,7 @@ void AsymReg::generateDataSet(Duration *time)
     static_assert(N % 2 == 0, "only even numbers of N are allowed"); // we want that 90° degree angle
     ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
 
+    /* printing list of rec. angles to stdout: */
     std::cout << "Using the following " << N << " recording angels:" << std::endl
               << (Phi*PHI/M_PI).format(IOFormat(2, 0, "", "°, ", "", "", "", "°")) // comma-separated & '°' after number
               << std::endl << std::endl;
@@ -231,9 +232,13 @@ void AsymReg::generateDataSet(Duration *time)
     }
     auto t2 = hrc::now(); // Stop timing
 
-    std::cout << "yDelta_n(s) = " << std::endl;
-    for (Index n = 0; n < N; ++n)
-        std::cout << n << ": " << m_DataSet[n] << std::endl;
+    /* printing generated data y_n to stdout: */
+    std::cout << "Resulting in the undisturbed (δ = 0) data:" << std::endl;
+    for (Index n = 0; n < N; ++n) {
+        std::cout << "y_" << n << "(s) =" << std::endl
+                  << m_DataSet[n] << std::endl
+                  << std::endl;
+    }
 
     std::cout << std::endl;
 
