@@ -12,15 +12,15 @@ class PlotterSettings : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(PageType page READ page WRITE setPage)
-    Q_PROPERTY(QMap xAxisSpan READ xAxisSpan WRITE setXaxisSpan)
-    Q_PROPERTY(QMap yAxisSpan READ yAxisSpan WRITE setYaxisSpan)
-    Q_PROPERTY(QMap zAxisSpan READ zAxisSpan WRITE setZaxisSpan)
-    Q_PROPERTY(QStringList axisTitles READ qAxisTitles WRITE qSetAxisTitles)
-    Q_PROPERTY(QStringList titles READ qTitles WRITE qSetTitles)
-    Q_PROPERTY(QMap imageSize READ imageSizeMap WRITE setImageSizeMap)
-    Q_PROPERTY(bool pageBorder READ pageBorder WRITE setPageBorder)
-    Q_PROPERTY(int font READ fontIndex WRITE setFontIndex)
+    Q_PROPERTY(PageType Page READ page WRITE setPage)
+    Q_PROPERTY(QMap X_AxisSpan READ xAxisSpan WRITE setXaxisSpan)
+    Q_PROPERTY(QMap Y_AxisSpan READ yAxisSpan WRITE setYaxisSpan)
+    Q_PROPERTY(QMap Z_AxisSpan READ zAxisSpan WRITE setZaxisSpan)
+    Q_PROPERTY(QStringList AxisTitles READ qAxisTitles WRITE qSetAxisTitles)
+    Q_PROPERTY(QStringList Titles READ qTitles WRITE qSetTitles)
+    Q_PROPERTY(QMap ImageSize READ imageSizeMap WRITE setImageSizeMap)
+    Q_PROPERTY(bool PageBorder READ pageBorder WRITE setPageBorder)
+    Q_PROPERTY(int Font READ fontIndex WRITE setFontIndex)
 
     Q_ENUMS(PageType)
 #else // QT_CORE_LIB
