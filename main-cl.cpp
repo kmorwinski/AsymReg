@@ -4,6 +4,8 @@
 
 #include "asymreg.h"
 #include "duration.h"
+#include "plotter.h"
+#include "plottersettings.h"
 
 #define DATA_FILE  "../data/recang-testdata-10x10.csv" // TODO: read from QSettings? or from argv?
 
@@ -65,14 +67,21 @@ int main(int argc, char **argv)
 
     Duration dt2;
     Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0, &dt2);
-
-    std::cout << "Xdot =" << std::endl
-              << Xdot << std::endl << std::endl;
+    //std::cout << "Xdot =" << std::endl
+    //          << Xdot << std::endl << std::endl;
 
     print_line_begin("...done (time used: ");
     std::cout << dt2.value() << dt2.unit() << ").";
     print_line_end();
     print_end();
+
+    ContourPlotterSettings sett;
+    sett.setTitle("Regularisierte Loesung Xdot", 1);
+
+    ContourPlotter plotter(&sett, Plotter::Output_Display_Widget);
+    plotter.setData(Xdot);
+    plotter.plot();
+
 /* -------------------------------------------------------------------- */
     return 0;
 }

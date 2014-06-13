@@ -56,6 +56,8 @@ set(asymreg_COMMON_SRCS
     asymreg.cpp
     duration.cpp
     interpol.cpp
+    plotter.cpp
+    plottersettings.cpp
 )
 
 set(asymreg_COMMON_HDRS
@@ -69,8 +71,6 @@ set(asymreg_COMMON_HDRS
 
 set(asymreg_GUI_SRCS
     mainwindow.cpp
-    plotter.cpp
-    plottersettings.cpp
     plottersettingsdialog.cpp
     svgviewer.cpp
 )
@@ -112,6 +112,10 @@ target_link_libraries(${asymreg_BIN}
     ${QT_LIBRARIES}
     ${QTIOCOMPRESSOR_LIBRARY}
     ${QJSON_LIBRARIES}
+    ${DISLIN_LIB}
+)
+
+target_link_libraries(${asymreg_cl_BIN}
     ${DISLIN_LIB}
 )
 
