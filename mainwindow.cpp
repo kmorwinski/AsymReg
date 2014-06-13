@@ -62,6 +62,12 @@ static bool qaction_lessThan(QAction *ac1, QAction *ac2)
 
 /**
  * Derived QMenu class to show QAction's tooltips.
+ * Tooltips are normally not shown for QAction elements beeing part of a QMenu.
+ * This behaviour is intended in Qt4 toolkit, but we want those tooltips to show up.
+ * It is needed e.g. to show the whole filename of a file-action.
+ *
+ * Class does not do much, it just overrides the protected event() function to catch
+ * QHelpEvent's and show or hide QAction's tooltip.
  * Taken from here: http://qt-project.org/faq/answer/how_can_i_add_tooltips_to_actions_in_menus
  */
 class Menu : public QMenu
@@ -69,10 +75,16 @@ class Menu : public QMenu
 public:
     bool event(QEvent *ev)
     {
+        Q_ASSERT(ev != nullptr);
         const QHelpEvent *helpEvent = static_cast<QHelpEvent *>(ev);
         if (helpEvent->type() == QEvent::ToolTip) {
-            // call QToolTip::showText on that QAction's tooltip.
-            QToolTip::showText(helpEvent->globalPos(), activeAction()->toolTip());
+            QAction *active = activeAction();
+            if (active != nullptr) { // <-- trying to prevent a hard to reproduce crash
+                                     // when mainwindow gets hidden but menu just pops up
+                // call QToolTip::showText on that QAction's tooltip:
+                QToolTip::showText(helpEvent->globalPos(),
+                                   active->toolTip());
+            }
         } else
             QToolTip::hideText();
 
