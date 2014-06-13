@@ -20,6 +20,7 @@ constexpr double H   = .1;              // Euler step
 constexpr int    T   = 15;              // maximum iterations for Euler method
 constexpr int    N   = AR_NUM_REC_ANGL; // number of recording angles
 constexpr double PHI = 180.;            // maximum rec. angle
+constexpr double X0_C = 0.1;            // constant used as initial value for X0 Matrix
 
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
@@ -262,7 +263,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
     //STDOUT_MATRIX(Noise);
 
     //Xn = sourceFunctionPlotData()  + 0.1 * Noise; // this is easy!
-    Xn = 0.1 * Noise;                               // this one is hard!
+    Xn = X0_C * Noise;                              // this one is hard!
     //STDOUT_MATRIX(Xn);
 
     Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
@@ -309,12 +310,14 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
             //STDOUT_MATRIX(Xn_1);
 
             Xdot += 1./double(N) * (Xn + 2*H*Xn_1);
+            Xn = Xdot; // use regularized data for next iteration step
         }
 
         //STDOUT_MATRIX(Xdot);
     } while (++run < T);
     auto t2 = hrc::now(); // Stop timing
 
+    /* calculate and pass back time used: */
     if (time != nullptr)
         *time = t2 - t1;
 
