@@ -2,6 +2,8 @@
 
 #include "plottersettings.h"
 
+#include <cassert>
+
 using namespace Eigen;
 
 ContourPlotter::ContourPlotter(const PlotterSettings *settings, OutputType out)
@@ -75,7 +77,7 @@ Plotter::Plotter(const PlotterSettings *settings, OutputType out)
       m_settings(settings),
       m_plotted(false)
 {
-    Q_ASSERT(settings != nullptr);
+    assert(settings != nullptr);
 
     m_dislin.reset("ALL");
 
@@ -92,16 +94,16 @@ Plotter::Plotter(const PlotterSettings *settings, OutputType out)
     setFont();
 
     // set axis titles:
-    QStringList axisTitles = m_settings->axisTitles();
+    std::array<std::string, 3> axisTitles = m_settings->axisTitles();
     int axis = m_settings->axis();
-    if ((1 <= axis) && !axisTitles.at(PlotterSettings::X_Axis).isEmpty())
-        m_dislin.name(axisTitles.at(PlotterSettings::X_Axis).toAscii().data(), "x");
+    if ((1 <= axis) && !axisTitles.at(PlotterSettings::X_Axis).empty())
+        m_dislin.name(axisTitles.at(PlotterSettings::X_Axis).c_str(), "x");
 
-    if ((2 <= axis) && !axisTitles.at(PlotterSettings::Y_Axis).isEmpty())
-        m_dislin.name(axisTitles.at(PlotterSettings::Y_Axis).toAscii().data(), "y");
+    if ((2 <= axis) && !axisTitles.at(PlotterSettings::Y_Axis).empty())
+        m_dislin.name(axisTitles.at(PlotterSettings::Y_Axis).c_str(), "y");
 
-    if ((3 <= axis) && !axisTitles.at(PlotterSettings::Z_Axis).isEmpty())
-        m_dislin.name(axisTitles.at(PlotterSettings::Z_Axis).toAscii().data(), "z");
+    if ((3 <= axis) && !axisTitles.at(PlotterSettings::Z_Axis).empty())
+        m_dislin.name(axisTitles.at(PlotterSettings::Z_Axis).c_str(), "z");
 }
 
 Plotter::~Plotter()
@@ -112,11 +114,10 @@ Plotter::~Plotter()
 
 void Plotter::plot()
 {
-    QStringList titles = m_settings->titles();
+    std::array<std::string, 4> titles = m_settings->titles();
     for (int i = 1; i <= 4; ++i) {
-        const char *c = titles.at(i-1).toAscii().data();
-        if (*c)
-            m_dislin.titlin(c, i);
+        if (!titles.at(i-1).empty())
+            m_dislin.titlin(titles.at(i-1).c_str(), i);
     }
     m_dislin.title(); // plot titles
 
@@ -127,8 +128,8 @@ void Plotter::plot()
 
 void Plotter::setFont()
 {
-    QString font = m_settings->font();
-    m_dislin.psfont(font.toAscii().data());
+    std::string font = m_settings->font();
+    m_dislin.psfont(font.c_str());
 }
 
 void Plotter::setSize()

@@ -1,11 +1,24 @@
 #include "plottersettings.h"
 
-#include <QtCore/QMap>
-#include <QtCore/QVariant>
+#include <cassert>
+
+#ifdef QT_CORE_LIB
+#  include <QtCore/QMap>
+#  include <QtCore/QVariant>
+
+#  define EMIT_QTSIGNAL(SIG)  emit SIG()
+#else
+#  define EMIT_QTSIGNAL(SIG)
+#endif
 
 inline bool operator==(const PlotterSettings::Span &s1, const PlotterSettings::Span &s2)
 {
     return (s1.from == s2.from) && (s1.to == s2.to);
+}
+
+inline bool operator==(const PlotterSettings::Size &s1, const PlotterSettings::Size &s2)
+{
+    return (s1.wd == s2.wd) && (s1.ht == s2.ht);
 }
 
 ContourPlotterSettings::ContourPlotterSettings()
@@ -21,9 +34,13 @@ ContourPlotterSettings::ContourPlotterSettings()
 }
 
 PlotterSettings::PlotterSettings()
+#ifdef QT_CORE_LIB
     : QObject(),
+#else
+    :
+#endif
       m_page(Page_DIN_A4_Landscape),
-      m_axisSpans({{0.,0.}, {0.,0.}, {0.,0.}}), // invalid axis spans
+      m_axisSpans({{ {0.,0.}, {0.,0.}, {0.,0.} }}), // invalid axis spans, c'tor needs 2 braces {{ }}
       m_axisTitles({"X axis", "Y axis", "Z axis"}),
       m_titles({"", "", "", ""}),
       m_imageSize(ImageStandardWidth, ImageStandardHeight),
@@ -42,14 +59,18 @@ PlotterSettings::Span PlotterSettings::axisSpan(PlotterSettings::Axis axis) cons
     return m_axisSpans.at(axis);
 }
 
-QStringList PlotterSettings::axisTitles() const
+std::array<std::string, 3> PlotterSettings::axisTitles() const
 {
     return m_axisTitles;
 }
 
-QString PlotterSettings::font() const
+std::string PlotterSettings::font() const
 {
-    return fonts().at(m_fontIndex);
+#ifdef QT_CORE_LIB
+    return fonts().at(m_fontIndex).toStdString();
+#else
+    return "Times Roman";
+#endif
 }
 
 int PlotterSettings::fontIndex() const
@@ -57,6 +78,7 @@ int PlotterSettings::fontIndex() const
     return m_fontIndex;
 }
 
+#ifdef QT_CORE_LIB
 QStringList PlotterSettings::fonts()
 {
     QStringList ret;
@@ -91,8 +113,9 @@ QMap<QString, QVariant> PlotterSettings::imageSizeMap() const
 
     return ret;
 }
+#endif // QT_CORE_LIB
 
-QSize PlotterSettings::imageSize() const
+PlotterSettings::Size PlotterSettings::imageSize() const
 {
     return m_imageSize;
 }
@@ -107,13 +130,74 @@ bool PlotterSettings::pageBorder() const
     return m_pageBorder;
 }
 
-void PlotterSettings::setAxisTitles(const QStringList &axisTitles)
+#ifdef QT_CORE_LIB
+QStringList PlotterSettings::qAxisTitles() const
+{
+    QStringList ret;
+    for (int i = 0; i < m_axis; ++i)
+        ret << QString::fromStdString(m_axisTitles.at(i));
+
+    return ret;
+}
+
+QString PlotterSettings::qTitle(int n) const
+{
+    Q_ASSERT(n >= 1 && n <= 4);
+
+    return QString::fromStdString(m_titles.at(n-1));
+}
+
+QStringList PlotterSettings::qTitles() const
+{
+    QStringList ret;
+    for (int i = 0; i < 4; ++i)
+        ret << QString::fromStdString(m_titles.at(i));
+
+    return ret;
+}
+
+void PlotterSettings::qSetAxisTitles(const QStringList &axisTitles)
+{
+    Q_ASSERT(axisTitles.size() <= 3);
+    std::array<std::string, 3> arr;
+
+    for (int i = 0; i < axisTitles.size(); ++i)
+        arr[i] = axisTitles.at(i).toStdString();
+
+    setAxisTitles(arr);
+}
+
+void PlotterSettings::qSetTitle(const QString &title, int n)
+{
+    Q_ASSERT(n >= 1 && n <= 4);
+
+    if (m_titles.at(n-1) == title.toStdString())
+        return;
+
+    m_titles[n-1] = title.toStdString();
+    EMIT_QTSIGNAL(settingsChanged);
+}
+
+void PlotterSettings::qSetTitles(const QStringList &titles)
+{
+    Q_ASSERT(titles.size() <= 4);
+
+    std::array<std::string, 4> arr;
+
+    for (int i = 0; i < titles.size(); ++i)
+        arr[i] = titles.at(i).toStdString();
+
+    setTitles(arr);
+}
+#endif // QT_CORE_LIB
+
+void PlotterSettings::setAxisTitles(const std::array<std::string, 3> &axisTitles)
 {
     if (m_axisTitles == axisTitles)
         return;
 
     m_axisTitles = axisTitles;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
 void PlotterSettings::setAxisSpan(const PlotterSettings::Span &axisSpan, Axis axis)
@@ -122,7 +206,7 @@ void PlotterSettings::setAxisSpan(const PlotterSettings::Span &axisSpan, Axis ax
         return;
 
     m_axisSpans[axis] = axisSpan;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
 void PlotterSettings::setFontIndex(int fontIndex)
@@ -131,26 +215,28 @@ void PlotterSettings::setFontIndex(int fontIndex)
         return;
 
     m_fontIndex = fontIndex;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
+#ifdef QT_CORE_LIB
 void PlotterSettings::setImageSizeMap(const QMap<QString, QVariant> &imageSizeMap)
 {
-    QSize size = QSize(imageSizeMap["width"].toInt(), imageSizeMap["height"].toInt());
+    Size size = Size(imageSizeMap["width"].toInt(), imageSizeMap["height"].toInt());
     if (m_imageSize == size)
         return;
 
     m_imageSize = size;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
+#endif
 
-void PlotterSettings::setImageSize(const QSize &imageSize)
+void PlotterSettings::setImageSize(const PlotterSettings::Size &imageSize)
 {
     if (m_imageSize == imageSize)
         return;
 
     m_imageSize = imageSize;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
 void PlotterSettings::setPage(PlotterSettings::PageType page)
@@ -159,7 +245,7 @@ void PlotterSettings::setPage(PlotterSettings::PageType page)
         return;
 
     m_page = page;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
 void PlotterSettings::setPageBorder(bool border)
@@ -168,29 +254,30 @@ void PlotterSettings::setPageBorder(bool border)
         return;
 
     m_pageBorder = border;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
-void PlotterSettings::setTitle(const QString &title, int n)
+void PlotterSettings::setTitle(const std::string &title, int n)
 {
-    Q_ASSERT(n <= 4);
+    assert(n >= 1 && n <= 4);
 
-    if (m_titles.at(n-1) == title)
+    if (title == m_titles.at(n-1))
         return;
 
     m_titles[n-1] = title;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
-void PlotterSettings::setTitles(const QStringList &titles)
+void PlotterSettings::setTitles(const std::array<std::string, 4> &titles)
 {
     if (m_titles == titles)
         return;
 
     m_titles = titles;
-    emit settingsChanged();
+    EMIT_QTSIGNAL(settingsChanged);
 }
 
+#ifdef QT_CORE_LIB
 void PlotterSettings::setXaxisSpan(const QMap<QString, QVariant> &axisSpan)
 {
     Span s = {axisSpan["from"].toDouble(), axisSpan["to"].toDouble()};
@@ -208,19 +295,21 @@ void PlotterSettings::setZaxisSpan(const QMap<QString, QVariant> &axisSpan)
     Span s = {axisSpan["from"].toDouble(), axisSpan["to"].toDouble()};
     setAxisSpan(s, Z_Axis);
 }
+#endif // QT_CORE_LIB
 
-QString PlotterSettings::title(int n) const
+std::string PlotterSettings::title(int n) const
 {
-    Q_ASSERT(n <= 4);
+    assert(n >= 1 && n <= 4);
 
     return m_titles.at(n-1);
 }
 
-QStringList PlotterSettings::titles() const
+std::array<std::string, 4> PlotterSettings::titles() const
 {
     return m_titles;
 }
 
+#ifdef QT_CORE_LIB
 QMap<QString, QVariant> PlotterSettings::xAxisSpan() const
 {
     QMap<QString, QVariant> ret;
@@ -253,5 +342,5 @@ QMap<QString, QVariant> PlotterSettings::zAxisSpan() const
 
     return ret;
 }
-
-#include "plottersettings.moc"
+#  include "plottersettings.moc"
+#endif // QT_CORE_LIB

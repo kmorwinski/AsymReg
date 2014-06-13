@@ -93,11 +93,11 @@ void PlotterSettingsDialog::loadValues()
 {
     // Title Lines:
     for (int i = 0; i < 4; ++i)
-        m_titleLines[i]->setText(m_settings->title(i + 1));
+        m_titleLines[i]->setText(m_settings->qTitle(i + 1));
 
     // Axis Labels & Spans:
     int axis = m_settings->axis();
-    QStringList axisTitles = m_settings->axisTitles();
+    QStringList axisTitles = m_settings->qAxisTitles();
     for (int i = 0; i < 3; ++i) {
         m_axisTitles[i]->setHidden(i >= axis);
         m_axisTitles[i]->setText(axisTitles.at(i));
@@ -121,7 +121,7 @@ void PlotterSettingsDialog::loadValues()
     m_pageComboBox->setCurrentIndex(pageIndex);
     m_pageComboBox->blockSignals(false);
 
-    QSize size = m_settings->imageSize();
+    PlotterSettings::Size size = m_settings->imageSize();
     m_heightSpinBox->setValue(size.height());
     m_widthSpinBox->setValue(size.width());
     if ((size.height() == PlotterSettings::ImageStandardHeight) &&
@@ -172,15 +172,15 @@ void PlotterSettingsDialog::saveValues()
 {
     // Title Lines:
     for (int i = 0; i < 4; ++i)
-        m_settings->setTitle(m_titleLines[i]->text(), i + 1);
+        m_settings->qSetTitle(m_titleLines[i]->text(), i + 1);
 
     // Axis Labels & Spans:
-    QStringList axisTitles = m_settings->axisTitles();
+    QStringList axisTitles = m_settings->qAxisTitles();
     for (int i = 0; i < 3; ++i) {
         if (!m_axisTitles[i]->isHidden())
             axisTitles[i] = m_axisTitles[i]->text();
     }
-    m_settings->setAxisTitles(axisTitles);
+    m_settings->qSetAxisTitles(axisTitles);
 
     if (!m_axisGroupBoxes[0]->isHidden()) {
         PlotterSettings::Span xSpan = {m_xSpinBoxes[0]->value(),
@@ -206,7 +206,7 @@ void PlotterSettingsDialog::saveValues()
 
     auto h = m_heightSpinBox->value();
     auto w = m_widthSpinBox->value();
-    m_settings->setImageSize(QSize(w, h));
+    m_settings->setImageSize(PlotterSettings::Size(w, h));
 
     // Additional Options:
     m_settings->setFontIndex(m_fontComboBox->currentIndex());

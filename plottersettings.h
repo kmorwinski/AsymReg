@@ -1,9 +1,12 @@
 #ifndef PLOTTERSETTINGS_H_
 #define PLOTTERSETTINGS_H_
 
-#include <QtCore/QSize>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
+#include <array>
+#include <string>
+
+#ifdef QT_CORE_LIB
+#  include <QtCore/QString>
+#  include <QtCore/QStringList>
 
 class PlotterSettings : public QObject
 {
@@ -13,14 +16,17 @@ class PlotterSettings : public QObject
     Q_PROPERTY(QMap xAxisSpan READ xAxisSpan WRITE setXaxisSpan)
     Q_PROPERTY(QMap yAxisSpan READ yAxisSpan WRITE setYaxisSpan)
     Q_PROPERTY(QMap zAxisSpan READ zAxisSpan WRITE setZaxisSpan)
-    Q_PROPERTY(QStringList axisTitles READ axisTitles WRITE setAxisTitles)
-    Q_PROPERTY(QStringList titles READ titles WRITE setTitles)
+    Q_PROPERTY(QStringList axisTitles READ qAxisTitles WRITE qSetAxisTitles)
+    Q_PROPERTY(QStringList titles READ qTitles WRITE qSetTitles)
     Q_PROPERTY(QMap imageSize READ imageSizeMap WRITE setImageSizeMap)
     Q_PROPERTY(bool pageBorder READ pageBorder WRITE setPageBorder)
     Q_PROPERTY(int font READ fontIndex WRITE setFontIndex)
 
     Q_ENUMS(PageType)
-
+#else // QT_CORE_LIB
+class PlotterSettings
+{
+#endif // (else) QT_CORE_LIB
 public:
     enum PageType {
         Page_DIN_A4_Landscape,
@@ -46,30 +52,48 @@ public:
         friend inline bool operator==(const Span &s1, const Span &s2);
     };
 
+    /**
+     * A simple replacement class for QSize.
+     */
+    class Size {
+    public:
+        Size(int width, int height) : wd(width), ht(height)
+        {}
+
+        inline int width() const
+        { return wd; }
+        inline int height() const
+        { return ht; }
+
+        friend inline bool operator==(const Size &s1, const Size &s2);
+
+    private:
+        int wd;
+        int ht;
+    };
+
     PlotterSettings();
 
     int axis() const;
 
-    QStringList axisTitles() const;
-    void setAxisTitles(const QStringList &axisTitles);
+    std::array<std::string, 3> axisTitles() const;
+    void setAxisTitles(const std::array<std::string, 3> &axisTitles);
 
     Span axisSpan(Axis axis) const;
     void setAxisSpan(const Span &axisSpan, Axis axis);
 
-    QString font() const;
-    static QStringList fonts();
-
+    std::string font() const;
     int fontIndex() const;
     void setFontIndex(int fontIndex);
 
-    QSize imageSize() const;
-    void setImageSize(const QSize &imageSize);
+    Size imageSize() const;
+    void setImageSize(const Size &imageSize);
 
-    QString title(int n) const;
-    void setTitle(const QString &title, int n);
+    std::string title(int n) const;
+    void setTitle(const std::string &title, int n);
 
-    QStringList titles() const;
-    void setTitles(const QStringList &titles);
+    std::array<std::string, 4> titles() const;
+    void setTitles(const std::array<std::string, 4> &titles);
 
     PageType page() const;
     void setPage(PageType page);
@@ -77,6 +101,7 @@ public:
     bool pageBorder() const;
     void setPageBorder(bool border);
 
+#ifdef QT_CORE_LIB
     // only for QJson/Q_PROPERTY:
     QMap<QString, QVariant> imageSizeMap() const;
     void setImageSizeMap(const QMap<QString, QVariant> &imageSizeMap);
@@ -90,21 +115,36 @@ public:
     QMap<QString, QVariant> zAxisSpan() const;
     void setZaxisSpan(const QMap<QString, QVariant>  &axisSpan);
 
+    // some additional Qt implementations:
+    static QStringList fonts();
+
+    QStringList qAxisTitles() const;
+    void qSetAxisTitles(const QStringList &qAxisTitles);
+
+    QString qTitle(int n) const;
+    void qSetTitle(const QString &qTitle, int n);
+
+    QStringList qTitles() const;
+    void qSetTitles(const QStringList &titles);
+#endif // QT_CORE_LIB
+
 protected:
     int m_axis; // set by dervived class!
 
 private:
+    std::array<Span, 3> m_axisSpans;
+    std::array<std::string, 3> m_axisTitles;
+    std::array<std::string, 4> m_titles;
     PageType m_page;
-    QList<Span> m_axisSpans;
-    QStringList m_axisTitles;
-    QStringList m_titles;
-    QSize m_imageSize;
+    Size m_imageSize;
 
     bool m_pageBorder;
     int m_fontIndex;
 
+#ifdef QT_CORE_LIB
 signals:
     void settingsChanged();
+#endif
 };
 
 class ContourPlotterSettings : public PlotterSettings
