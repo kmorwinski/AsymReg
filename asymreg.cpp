@@ -100,31 +100,12 @@ public:
     template <typename Scalar>
     Scalar operator()(const Scalar s) const
     {
-        /* trInv:
-         * ======
-         * Inverse coordinate transformation from target coord. system
-         * (r,s) \in [0,1]^2 to physical coord. system (x,y) = [0,10]^2
-         * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
-         *  => tr(r,s) = (3*r+5, 3*s+5)
-         *  => trInv(x,y) = tr.inverse()(x,y) = (0.333*[x-5], 0.333*[y-5])
-         *
-         * Todo: documents want (r,s) = D^1  (unit disc)
-         */
-        //static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
-
-        //STDOUT_MATRIX(trInv);
-
-        /* translate s to target coord. system: */
-        //Vector2d v(s, Scalar(0));
-        //Scalar t = (trInv * v)(0);
-        Scalar t = s;
-
         /* check out of bound, SchlierenData is only valid in [-1,1]: */
-        if ((t < -1.) || (t > 1.))
+        if ((s < -1.) || (s > 1.))
             return Scalar(0);
 
         /* get data at s:*/
-        Scalar ret = m_interpol->interpol(t);
+        Scalar ret = m_interpol->interpol(s);
 
         return ret;
     }
@@ -250,6 +231,7 @@ void AsymReg::generateDataSet(Duration *time)
 Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
+    typedef typename MatrixXd::Scalar Scalar;
 
     auto t1 = hrc::now(); // Start timing
     Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
@@ -304,6 +286,22 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
                 for (int l = 0; l < ASYMREG_GRID_SIZE; ++l) {
                     Matrix<double, 2, 1> vec;
                     vec << Xsi(k), Xsi(l);
+
+                    /* trInv:
+                     * ======
+                     * Inverse coordinate transformation from target coord. system
+                     * (r,s) \in [0,1]^2 to physical coord. system (x,y) = [0,10]^2
+                     * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
+                     *  => tr(r,s) = (3*r+5, 3*s+5)
+                     *  => trInv(x,y) = tr.inverse()(x,y) = (0.333*[x-5], 0.333*[y-5])
+                     *
+                     * Todo: documents want (r,s) = D^1  (unit disc)
+                     */
+                    static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+                    //STDOUT_MATRIX(trInv);
+
+                    /* translate s to target coord. system: */
+                    vec = trInv * vec;
 
                     Xn_1(k,l) = R_adjoint(vec);
                 }
