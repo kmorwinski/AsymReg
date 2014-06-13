@@ -247,7 +247,7 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
 
@@ -278,6 +278,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
     RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
 
     int run = 0;
+    int max = (iterations > 0) ? iterations : T;
     do {
         for (int n = 0; n < Sigma.cols(); ++n) {
             SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
@@ -314,7 +315,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(Duration *time)
         }
 
         //STDOUT_MATRIX(Xdot);
-    } while (++run < T);
+    } while (++run < max);
     auto t2 = hrc::now(); // Stop timing
 
     /* calculate and pass back time used: */

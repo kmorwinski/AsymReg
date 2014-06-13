@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     print_line("Running Asymptotical Regularization...");
 
     Duration dt2;
-    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(&dt2);
+    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0, &dt2);
 
     std::cout << "Xdot =" << std::endl
               << Xdot << std::endl << std::endl;

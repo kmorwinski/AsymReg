@@ -610,7 +610,7 @@ void MainWindow::runAsymReg()
     AsymReg::generateDataSet();
 
     Duration dur;
-    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(&dur);
+    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(0, &dur);
     auto dt = dur.value();
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
