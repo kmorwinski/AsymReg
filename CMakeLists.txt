@@ -33,16 +33,15 @@ else()
 endif()
 
 # QT 4.8
-find_package(Qt4 4.8 COMPONENTS QtSvg REQUIRED)
+find_package(Qt4 4.8 COMPONENTS QtCore QtGui QtSvg REQUIRED)
+include(${QT_USE_FILE}) # sets -DQT_NO_DEBUG and other useful things
+
 find_package(QtIOCompressor)
 if(QTIOCOMPRESSOR_FOUND)
     add_definitions(-DQT_HAS_IOCOMPRESSOR)
 endif()
-find_package(QJSON 0.8.1 REQUIRED)
 
-if(NOT ${asymreg_BUILD_TYPE} STREQUAL DEBUG)
-    add_definitions(-DQT_NO_DEBUG) # skip all Q_ASSERT's
-endif()
+find_package(QJSON 0.8.1 REQUIRED)
 
 # Eigen 3.2.1
 find_package(Eigen3 3.2.1 REQUIRED)
@@ -80,7 +79,6 @@ set(asymreg_GUI_HDRS "")
 
 # set proper include dirs:
 include_directories(
-    ${QT_INCLUDES}
     ${QTIOCOMPRESSOR_INCLUDE_DIR}
     ${QJSON_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
@@ -89,9 +87,14 @@ include_directories(
 )
 
 # build & link executables:
-qt4_automoc(${asymreg_GUI_SRCS} ${asymreg_GUI_HDRS})
+qt4_automoc(
+    ${asymreg_GUI_SRCS}
+    ${asymreg_GUI_HDRS}
+    ${asymreg_COMMON_SRCS}
+    ${asymreg_COMMON_HDRS}
+)
 
-add_executable(${asymreg_BIN}
+add_executable(${asymreg_BIN} # gui target
     ${asymreg_COMMON_SRCS}
     ${asymreg_COMMON_HDRS}
     ${asymreg_GUI_SRCS}
@@ -99,19 +102,35 @@ add_executable(${asymreg_BIN}
     main.cpp
 )
 
-add_executable(${asymreg_cl_BIN}
+add_executable(${asymreg_cl_BIN} # cl target
     ${asymreg_COMMON_SRCS}
     ${asymreg_COMMON_HDRS}
     main-cl.cpp
 )
 
 target_link_libraries(${asymreg_BIN}
-    ${QT_QTCORE_LIBRARY}
-    ${QT_QTGUI_LIBRARY}
-    ${QT_QTSVG_LIBRARY}
+    ${QT_LIBRARIES}
     ${QTIOCOMPRESSOR_LIBRARY}
     ${QJSON_LIBRARIES}
     ${DISLIN_LIB}
+)
+
+# Remove Qt4 definitions from cl-build. Otherwise it will fail!!!
+get_property(asymreg_DEFS DIRECTORY PROPERTY COMPILE_DEFINITIONS) # get all current definitions
+
+set(asymreg_cl_DEFS)
+foreach(itr ${asymreg_DEFS})
+    if(NOT itr MATCHES "QT_.*") # regexp mathes all -DQT_CORE_LIB, -DQT_GUI_LIB, etc.
+        list(APPEND asymreg_cl_DEFS ${itr}) # add to list, if it didn't match
+    endif()
+endforeach()
+
+set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS) # unset all (DIRECTORY=global) definitions
+set_property(TARGET ${asymreg_BIN}
+    PROPERTY COMPILE_DEFINITIONS ${asymreg_DEFS} # set them again for gui build
+)
+set_property(TARGET ${asymreg_cl_BIN}
+    PROPERTY COMPILE_DEFINITIONS ${asymreg_cl_DEFS} # build cl without Qt4
 )
 
 # intall
