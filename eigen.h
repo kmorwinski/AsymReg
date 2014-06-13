@@ -6,7 +6,7 @@
 // some usefull printing formats:
 #define EIGEN_IOFMT_CSV     IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
 #define EIGEN_IOFMT_PRETTY  IOFormat(4, 0, ", ", "\n", "[", "]")
-#define EIGEN_IOFMT_OCTAVE  IOFormat(StreamPrecision, 0, ", ", ";\n", "", "", "[", "]")
+#define EIGEN_IOFMT_OCTAVE  IOFormat(StreamPrecision, 0, ", ", ";\n", "", "", "[", " ]")
 
 #define EIGEN_DEFAULT_IO_FORMAT  EIGEN_IOFMT_OCTAVE // set 'pretty' as global default
 

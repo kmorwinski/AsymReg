@@ -215,7 +215,7 @@ void AsymReg::generateDataSet(Duration *time)
     auto t2 = hrc::now(); // Stop timing
 
     /* printing generated data y_n to stdout: */
-    std::cout << "Resulting in the undisturbed (δ = 0) data:" << std::endl;
+    std::cout << "Resulting in the following undisturbed (delta = 0) data:" << std::endl;
     for (Index n = 0; n < N; ++n) {
         std::cout << "y_" << n << "(s) =" << std::endl
                   << m_DataSet[n] << std::endl
@@ -232,6 +232,12 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
+
+    std::cout << "Solving ODE with direct Euler method:" << std::endl
+              << "  -> step size h = " << H << std::endl
+              << "  -> initial value X0 = " << X0_C
+              << " matrix of R^[" << ASYMREG_GRID_SIZE << "x" << ASYMREG_GRID_SIZE << "]"
+              << std::endl;
 
     auto t1 = hrc::now(); // Start timing
     Matrix<double, Dynamic, Dynamic> Xdot(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
@@ -262,6 +268,8 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
     int run = 0;
     int max = (iterations > 0) ? iterations : T;
     do {
+        std::cout << "Euler iteration no " << run + 1 << " of " << max << std::endl;
+
         for (int n = 0; n < Sigma.cols(); ++n) {
             SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
             RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
@@ -319,6 +327,8 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
     /* calculate and pass back time used: */
     if (time != nullptr)
         *time = t2 - t1;
+
+    std::cout << std::endl; // put another linebreak to stdout for easier reading
 
     /* Xdot = Xn + 2hR*{R(Xn)[Y - F(Xn)]} */
     m_Result = Xdot;
