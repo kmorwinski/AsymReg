@@ -1,6 +1,9 @@
 #ifndef PLOTTER_H_
 #define PLOTTER_H_
 
+#include <memory>
+#include <vector>
+
 #include <discpp.h>
 
 #include "eigen.h"
@@ -17,10 +20,12 @@ public:
     Plotter(const PlotterSettings *settings, OutputType = Output_SVG_Image);
     ~Plotter();
 
-    void plot();
+    static void closeAllRemainingPlotter();
+
+    void plot(bool doNotBlock = false);
 
 protected:
-    Dislin m_dislin;
+    std::shared_ptr<Dislin> m_dislin;
     const PlotterSettings *m_settings;
 
 private:
@@ -28,6 +33,8 @@ private:
     void setOutput();
     void setPage();
     void setSize();
+
+    static std::vector<std::shared_ptr<Dislin> > m_dislinList;
 
     OutputType m_outputType;
     bool m_plotted;
