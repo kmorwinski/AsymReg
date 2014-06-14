@@ -9,6 +9,8 @@
 #include "duration.h"
 #include "interpol.h"
 #include "radonoperator.h"
+#include "plotter.h"
+#include "plottersettings.h"
 
 // defines:
 #define STDOUT_MATRIX(MAT) \
@@ -233,6 +235,11 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
 
+    /* prepare plotter settings: */
+    ContourPlotterSettings sett;
+    sett.setTitle("regularized data", 1);
+    sett.setAxisSpan({0, 5}, PlotterSettings::Z_Axis);
+
     std::cout << "Solving ODE with direct Euler method:" << std::endl
               << "  -> step size h = " << H << std::endl
               << "  -> initial value X0 = " << X0_C
@@ -268,7 +275,9 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
     int run = 0;
     int max = (iterations > 0) ? iterations : T;
     do {
-        std::cout << "Euler iteration no " << run + 1 << " of " << max << std::endl;
+        std::string itrStr = "Euler iteration no " + std::to_string(run + 1)
+                             + " of " + std::to_string(max);
+        std::cout << itrStr << std::endl;
 
         for (int n = 0; n < Sigma.cols(); ++n) {
             SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
@@ -319,6 +328,12 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
             Xdot += 1./double(N) * (Xn + 2*H*Xn_1);
             Xn = Xdot; // use regularized data for next iteration step
         }
+
+        /* plot lastest iteration result: */
+        sett.setTitle(itrStr, 3);
+        ContourPlotter plotter(&sett, Plotter::Output_Display_Widget);
+        plotter.setData(Xdot);
+        plotter.plot(true);
 
         //STDOUT_MATRIX(Xdot);
     } while (++run < max);

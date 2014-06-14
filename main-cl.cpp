@@ -83,6 +83,9 @@ int main(int argc, char **argv)
     plotter.plot();
 
 /* -------------------------------------------------------------------- */
+
+    Plotter::closeAllRemainingPlotter();
+
     return 0;
 }
 

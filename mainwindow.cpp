@@ -621,6 +621,8 @@ void MainWindow::runAsymReg()
 
     AsymReg::generateDataSet();
 
+    Plotter::closeAllRemainingPlotter(); // close windows from last run
+
     Duration dur;
     const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(0, &dur);
     auto dt = dur.value();
