@@ -32,6 +32,7 @@
 #include <fstream>
 
 #include "asymreg.h"
+#include "constants.h"
 #include "duration.h"
 #include "plotter.h"
 #include "plottersettings.h"

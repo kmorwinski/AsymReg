@@ -5,24 +5,18 @@
 #include <iostream>
 
 #include "backprojection.h"
-#include "eigen.h"
+#include "constants.h"
 #include "duration.h"
+#include "eigen.h"
 #include "interpol.h"
-#include "radonoperator.h"
 #include "plotter.h"
 #include "plottersettings.h"
+#include "radonoperator.h"
 
 // defines:
 #define STDOUT_MATRIX(MAT) \
     std::cout << #MAT" =" << std::endl \
               << MAT << std::endl << std::endl
-
-// constants:
-constexpr double H   = .05;             // Euler step
-constexpr int    T   = 4;               // maximum iterations for Euler method
-constexpr int    N   = AR_NUM_REC_ANGL; // number of recording angles
-constexpr double PHI = 180.;            // maximum rec. angle
-constexpr double X0_C = 0.1;            // constant used as initial value for X0 Matrix
 
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
