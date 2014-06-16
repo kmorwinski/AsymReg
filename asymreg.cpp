@@ -224,10 +224,13 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *time)
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double step, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
+
+
+    double h = (step > 0.) ? step : H;
 
     /* prepare plotter settings: */
     ContourPlotterSettings sett;
@@ -319,7 +322,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, Duration *
             }
             //STDOUT_MATRIX(Xn_1);
 
-            Xdot += 1./double(N) * (Xn + 2*H*Xn_1);
+            Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
             Xn = Xdot; // use regularized data for next iteration step
         }
 

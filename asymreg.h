@@ -25,7 +25,7 @@ public:
 
     static void generateDataSet(Duration *time = nullptr);
 
-    static Matrix<double, Dynamic, Dynamic> &regularize(int iterations = 0, Duration *time = nullptr);
+    static Matrix<double, Dynamic, Dynamic> &regularize(int iterations, double step, Duration *time = nullptr);
 
 private:
     static void setSourceFunction(BilinearInterpol *func);
