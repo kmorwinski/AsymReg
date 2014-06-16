@@ -10,15 +10,20 @@
 #include <QtGui/QAction>
 #include <QtGui/QActionGroup>
 #include <QtGui/QCloseEvent>
+#include <QtGui/QComboBox>
+#include <QtGui/QDoubleSpinBox>
 #include <QtGui/QFileDialog>
 #include <QtGui/QFontMetrics>
+#include <QtGui/QFormLayout>
+#include <QtGui/QGroupBox>
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QIcon>
 #include <QtGui/QLabel>
 #include <QtGui/QMenu>
 #include <QtGui/QMessageBox>
-#include <QtGui/QStatusBar>
 #include <QtGui/QPushButton>
+#include <QtGui/QSpinBox>
+#include <QtGui/QStatusBar>
 #include <QtGui/QToolBar>
 #include <QtGui/QToolTip>
 #include <QtGui/QTableWidget>
@@ -139,6 +144,52 @@ MainWindow::MainWindow()
                           "<br/>"
                           "<i>Example:</i> Schlieren Imaging<br/>"
                           "<br/><br/>"));
+
+    QFormLayout *runConfigLayoutLeft = new QFormLayout;
+    QFormLayout *runConfigLayoutRight = new QFormLayout;
+
+    m_runGridSizeSpinBox = new QSpinBox;
+    m_runGridSizeSpinBox->setSingleStep(10);
+    m_runGridSizeSpinBox->setMaximum(250);
+    m_runGridSizeSpinBox->setValue(ASYMREG_GRID_SIZE);
+    m_runGridSizeSpinBox->setDisabled(true); // has no function yet
+    runConfigLayoutLeft->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
+
+    QLabel *odeLabel = new QLabel;
+    odeLabel->setText(tr("ODE Solver Configuration"));
+    QFont odeFont = odeLabel->font();
+    odeFont.setItalic(true);
+    odeFont.setUnderline(true);
+    odeLabel->setFont(odeFont);
+    runConfigLayoutLeft->setWidget(1, QFormLayout::SpanningRole, odeLabel);
+
+    m_runEulerStepSpinBox = new QDoubleSpinBox;
+    m_runEulerStepSpinBox->setDecimals(3);
+    m_runEulerStepSpinBox->setSingleStep(.005);
+    m_runEulerStepSpinBox->setRange(.001, 1.);
+    m_runEulerStepSpinBox->setAccelerated(true); // values will spin up/down fast
+    m_runEulerStepSpinBox->setValue(H); // set standard constant
+    m_runEulerStepSpinBox->setToolTip(tr("Parameter \"h\" used in Euler Solver."));
+    runConfigLayoutLeft->addRow(tr("Step Size:"), m_runEulerStepSpinBox);
+
+    runConfigLayoutRight->addRow(QString(" "), new QWidget); // dummy
+
+    m_runSolverSelectComboBox = new QComboBox;
+    m_runSolverSelectComboBox->addItem(tr("Euler (direct)"));
+    runConfigLayoutRight->addRow(tr("Select Solver:"), m_runSolverSelectComboBox);
+
+    m_runEulerIterationSpinBox = new QSpinBox;
+    m_runEulerIterationSpinBox->setRange(0, 25); // 0: auto, 1-25: manual
+    m_runEulerIterationSpinBox->setSpecialValueText(tr("auto")); // show "auto" when set to 0
+    m_runEulerIterationSpinBox->setValue(T);
+    runConfigLayoutRight->addRow(tr("Max. iterations:"), m_runEulerIterationSpinBox);
+
+    QHBoxLayout *runConfigLayout = new QHBoxLayout;
+    runConfigLayout->addLayout(runConfigLayoutLeft);
+    runConfigLayout->addLayout(runConfigLayoutRight);
+
+    QGroupBox *runConfigGroupBox = new QGroupBox;
+    runConfigGroupBox->setLayout(runConfigLayout);
 
     m_dataSourceTableWidget = new QTableWidget;
     m_dataSourceTableWidget->setRowCount(ASYMREG_DATSRC_SIZE);
@@ -623,9 +674,13 @@ void MainWindow::runAsymReg()
     AsymReg::generateDataSet();
 
     Plotter::closeAllRemainingPlotter(); // close windows from last run
+    int maxIterations = m_runEulerIterationSpinBox->value();
+    double stepSize = m_runEulerStepSpinBox->value();
 
     Duration dur;
-    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(0, 0., &dur);
+    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(maxIterations,
+                                                                    stepSize,
+                                                                    &dur);
     auto dt = dur.value();
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));

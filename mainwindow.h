@@ -9,8 +9,11 @@
 
 class PlotterSettings;
 class QActionGroup;
+class QComboBox;
+class QDoubleSpinBox;
 class QFileSystemWatcher;
 class QPushButton;
+class QSpinBox;
 class QTableWidget;
 class QTableWidgetItem;
 class SvgViewer;
@@ -68,6 +71,12 @@ private:
     // read and save settings, file-lists & windows-size:
     void readSettings();
     void saveSettings() const;
+
+    // members for run configuration:
+    QComboBox *m_runSolverSelectComboBox;
+    QDoubleSpinBox *m_runEulerStepSpinBox;
+    QSpinBox *m_runEulerIterationSpinBox;
+    QSpinBox *m_runGridSizeSpinBox;
 
     // members for plotter configuration handling:
     PlotterSettings *m_pressureFunctionPlotSettings;
