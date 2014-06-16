@@ -104,8 +104,10 @@ MainWindow::MainWindow()
       m_dataSourceChanged(false),
       m_closeIntermediatePlotterButton(nullptr)
 {
+    /* window properties: */
     setWindowTitle(tr("Main[*] - %1").arg(qApp->applicationName()));
 
+    /* toolbar: */
     QAction *quitAction = new QAction(this);
     quitAction->setText(tr("&Quit"));
     quitAction->setIcon(QIcon::fromTheme("application-exit"));
@@ -135,6 +137,7 @@ MainWindow::MainWindow()
     toolBar->setObjectName("mainToolBar"); // shutdown warning from QSettings
     addToolBar(Qt::TopToolBarArea, toolBar);
 
+    /* info label: */
     QLabel *infoLabel = new QLabel;
     infoLabel->setTextInteractionFlags(Qt::NoTextInteraction);
     infoLabel->setTextFormat(Qt::RichText);
@@ -146,6 +149,7 @@ MainWindow::MainWindow()
                           "<i>Example:</i> Schlieren Imaging<br/>"
                           "<br/><br/>"));
 
+    /* run configuration widget: */
     QFormLayout *runConfigLayoutLeft = new QFormLayout;
     QFormLayout *runConfigLayoutRight = new QFormLayout;
 
@@ -192,12 +196,14 @@ MainWindow::MainWindow()
     QGroupBox *runConfigGroupBox = new QGroupBox;
     runConfigGroupBox->setLayout(runConfigLayout);
 
+    /* data source table widget: */
     m_dataSourceTableWidget = new QTableWidget;
     m_dataSourceTableWidget->setRowCount(ASYMREG_DATSRC_SIZE);
     m_dataSourceTableWidget->setColumnCount(ASYMREG_DATSRC_SIZE);
     connect(m_dataSourceTableWidget, SIGNAL(itemChanged(QTableWidgetItem*)),
             this, SLOT(dataSourceChanged(QTableWidgetItem*)));
 
+    /* data source file actions: */
     QAction *emptyFileAction = new QAction(this);
     emptyFileAction->setText(tr(MW_DATSRC_STR_EMPTY));
     emptyFileAction->setCheckable(true);
@@ -237,6 +243,7 @@ MainWindow::MainWindow()
     connect(m_dataSourceSaveButton, SIGNAL(clicked()),
             this, SLOT(saveDataSource()));
 
+    /* data source plotting: */
     QPushButton *dataSourcePlotButton = new QPushButton;
     dataSourcePlotButton->setText(tr("Plot Data Source"));
     dataSourcePlotButton->setToolTip(tr("Plots the interpolated data from the current selected data source."));
@@ -275,6 +282,7 @@ MainWindow::MainWindow()
     plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
     plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
+    /* run asymreg: */
     QPushButton *runAsymRegButton = new QPushButton;
     runAsymRegButton->setText(tr("&Run Asymptotical Regularization"));
     runAsymRegButton->setToolTip(tr("Starts the mathematical part of this programm."));
@@ -282,7 +290,7 @@ MainWindow::MainWindow()
     connect(runAsymRegButton, SIGNAL(clicked(bool)),
             this, SLOT(runAsymReg()));
 
-    // layout(s):
+    /* layout(s): */
     QVBoxLayout *buttonLayout = new QVBoxLayout;
     buttonLayout->addWidget(m_dataSourceSelectButton);
     buttonLayout->addWidget(m_dataSourceSaveButton);
@@ -297,40 +305,40 @@ MainWindow::MainWindow()
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(infoLabel);
+    layout->addWidget(runConfigGroupBox, 0);
     layout->addLayout(middleLayout, 1);
     layout->addWidget(runAsymRegButton);
 
-    // our Central-Widget is just an empty QWidget to
-    // hold the main layout:
-    setCentralWidget(new QWidget);
-    centralWidget()->setLayout(layout);
+    /* central widget: */
+    setCentralWidget(new QWidget); // our Central-Widget is just an empty QWidget...
+    centralWidget()->setLayout(layout); // ...which holds the main layout
 
-    // init file-system-watcher to recognize when dislin has finished
+    /* init file-system-watcher to recognize when dislin has finished: */
     QDir dir(QDir::currentPath());
     m_plotWatcher = new QFileSystemWatcher;
     m_plotWatcher->addPath(dir.canonicalPath());
     connect(m_plotWatcher, SIGNAL(directoryChanged(QString)),
             this, SLOT(showSvgViewer(QString)));
 
-    // init matrix/vector:
+    /* init matrix/vector: */
     zMat.resize(ASYMREG_DATSRC_SIZE, ASYMREG_DATSRC_SIZE);
     zMat.setZero();
     loadDataSourceToTableWidget();
 
-    // read window-size, file-lists, etc from settings:
-    readSettings();
+    /* restore settings: */
+    readSettings(); // read window-size, file-lists, etc
 
-    // load plotter configuration:
+    /* load plotter configuration: */
     m_pressureFunctionPlotSettings = new ContourPlotterSettings;
     connect(m_pressureFunctionPlotSettings, SIGNAL(settingsChanged()),
             this, SLOT(changedPlotConfig()));
     selectPlotConfig(currentPlotConfigAction); // read preset file, TODO: Move to readSettings()
 
-    // make 'Enter' key hit the run-Button:
+    /* make 'Enter' key hit the run-Button: */
     runAsymRegButton->setDefault(true);
     runAsymRegButton->setFocus();
 
-    // auto run regularization (this is more a debug option):
+    /* auto run regularization (this is more a debug option): */
     if (m_autoRunAction->isChecked()) {
         QMetaObject::invokeMethod(this, "runAsymReg",
                                   Qt::QueuedConnection);
@@ -339,10 +347,10 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-    // delete class members:
+    /* delete class members: */
     delete m_plotWatcher;
 
-    // clean up plot files:
+    /* clean up plot files: */
     QDir dir(QDir::currentPath());
     QStringList nameFilters = {"*.svg", "*.met"};
     QStringList images = dir.entryList(nameFilters, QDir::Files);
