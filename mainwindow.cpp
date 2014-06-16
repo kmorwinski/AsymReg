@@ -101,7 +101,8 @@ public:
 MainWindow::MainWindow()
     : m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
-      m_dataSourceChanged(false)
+      m_dataSourceChanged(false),
+      m_closeIntermediatePlotterButton(nullptr)
 {
     setWindowTitle(tr("Main[*] - %1").arg(qApp->applicationName()));
 
@@ -484,8 +485,17 @@ void MainWindow::changedPlotConfig()
     setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
 }
 
+void MainWindow::closeIntermediatePlotter()
+{
+    Plotter::closeAllRemainingPlotter(); // close windows to clean workspace
+    if (m_closeIntermediatePlotterButton != nullptr)
+        m_closeIntermediatePlotterButton->hide();
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    closeIntermediatePlotter();
+
     if (isWindowModified()) {
         if (m_dataSourceChanged) {
             QAction *dataSource = m_dataSourceSelectGroup->checkedAction();
@@ -673,7 +683,6 @@ void MainWindow::runAsymReg()
 
     AsymReg::generateDataSet();
 
-    Plotter::closeAllRemainingPlotter(); // close windows from last run
     int maxIterations = m_runEulerIterationSpinBox->value();
     double stepSize = m_runEulerStepSpinBox->value();
 
@@ -681,6 +690,18 @@ void MainWindow::runAsymReg()
     const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(maxIterations,
                                                                     stepSize,
                                                                     &dur);
+
+    if (m_closeIntermediatePlotterButton == nullptr) {
+        m_closeIntermediatePlotterButton = new QPushButton;
+        m_closeIntermediatePlotterButton->setToolTip(tr("Close Opened Intermediate Plotter"));
+        m_closeIntermediatePlotterButton->setIcon(QIcon::fromTheme("window-close"));
+        m_closeIntermediatePlotterButton->setFlat(true);
+        connect(m_closeIntermediatePlotterButton, SIGNAL(clicked()),
+                this, SLOT(closeIntermediatePlotter()));
+        statusBar()->addPermanentWidget(m_closeIntermediatePlotterButton);
+    } else
+        m_closeIntermediatePlotterButton->setHidden(false);
+
     auto dt = dur.value();
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));

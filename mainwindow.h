@@ -41,6 +41,7 @@ private slots:
     void changedPlotConfig();
 
     // Asymptotical Regularization:
+    void closeIntermediatePlotter();
     void runAsymReg();
 
     // private slots for viewing plots:
@@ -99,6 +100,7 @@ private:
 
     // other:
     QAction *m_autoRunAction;
+    QPushButton *m_closeIntermediatePlotterButton;
 };
 
 #endif // MAINWINDOW_H_
