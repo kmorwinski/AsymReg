@@ -31,7 +31,7 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
     m_axisGroupBoxes[1] = setupAxisWidgets('y');
     m_axisGroupBoxes[2] = setupAxisWidgets('z');
 
-    QGroupBox *pageNimgDimGroupBox = setupPageNimgDimWidgets();
+    QGroupBox *pageAndImgDimGroupBox = setupPageAndImgDimWidgets();
 
     m_moreGroupBox = setupMoreWidgets();
     m_moreGroupBox->hide();
@@ -63,7 +63,7 @@ PlotterSettingsDialog::PlotterSettingsDialog(QWidget *parent, Qt::WindowFlags f)
     layout->addWidget(m_axisGroupBoxes[0]);
     layout->addWidget(m_axisGroupBoxes[1]);
     layout->addWidget(m_axisGroupBoxes[2]);
-    layout->addWidget(pageNimgDimGroupBox);
+    layout->addWidget(pageAndImgDimGroupBox);
     layout->addWidget(m_moreGroupBox);
     layout->addWidget(buttonBox);
     setLayout(layout);
@@ -309,7 +309,7 @@ QGroupBox *PlotterSettingsDialog::setupMoreWidgets()
     return ret;
 }
 
-QGroupBox *PlotterSettingsDialog::setupPageNimgDimWidgets()
+QGroupBox *PlotterSettingsDialog::setupPageAndImgDimWidgets()
 {
     QGroupBox *ret;
 

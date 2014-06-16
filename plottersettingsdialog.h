@@ -34,7 +34,7 @@ private:
     void saveValues();
     QGroupBox *setupAxisWidgets(char axis);
     QGroupBox *setupMoreWidgets();
-    QGroupBox *setupPageNimgDimWidgets();
+    QGroupBox *setupPageAndImgDimWidgets();
     QGroupBox *setupTitlesWidgets();
 
     PlotterSettings *m_settings;
