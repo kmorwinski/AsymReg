@@ -691,24 +691,25 @@ void MainWindow::runAsymReg()
 
     AsymReg::generateDataSet();
 
-    int maxIterations = m_runEulerIterationSpinBox->value();
-    double stepSize = m_runEulerStepSpinBox->value();
-
     Duration dur;
-    const Matrix<double, Dynamic, Dynamic> &X = AsymReg::regularize(maxIterations,
-                                                                    stepSize,
-                                                                    &dur);
+    const Matrix<double, Dynamic, Dynamic> &X =
+            AsymReg::regularize(m_runEulerIterationSpinBox->value(),
+                                m_runEulerStepSpinBox->value(),
+                                autoPlot ? m_pressureFunctionPlotSettings : nullptr,
+                                &dur);
 
-    if (m_closeIntermediatePlotterButton == nullptr) {
-        m_closeIntermediatePlotterButton = new QPushButton;
-        m_closeIntermediatePlotterButton->setToolTip(tr("Close Opened Intermediate Plotter"));
-        m_closeIntermediatePlotterButton->setIcon(QIcon::fromTheme("window-close"));
-        m_closeIntermediatePlotterButton->setFlat(true);
-        connect(m_closeIntermediatePlotterButton, SIGNAL(clicked()),
-                this, SLOT(closeIntermediatePlotter()));
-        statusBar()->addPermanentWidget(m_closeIntermediatePlotterButton);
-    } else
-        m_closeIntermediatePlotterButton->setHidden(false);
+    if (autoPlot) {
+        if (m_closeIntermediatePlotterButton == nullptr) {
+            m_closeIntermediatePlotterButton = new QPushButton;
+            m_closeIntermediatePlotterButton->setToolTip(tr("Close Opened Intermediate Plotter"));
+            m_closeIntermediatePlotterButton->setIcon(QIcon::fromTheme("window-close"));
+            m_closeIntermediatePlotterButton->setFlat(true);
+            connect(m_closeIntermediatePlotterButton, SIGNAL(clicked()),
+                    this, SLOT(closeIntermediatePlotter()));
+            statusBar()->addPermanentWidget(m_closeIntermediatePlotterButton);
+        } else
+            m_closeIntermediatePlotterButton->setHidden(false);
+    }
 
     auto dt = dur.value();
     auto unit = dur.unit();

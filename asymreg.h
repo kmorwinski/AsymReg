@@ -11,8 +11,9 @@
 
 #include "eigen.h"
 
-class Duration;
 class BilinearInterpol;
+class Duration;
+class PlotterSettings;
 
 class AsymReg {
 public:
@@ -25,7 +26,7 @@ public:
 
     static void generateDataSet(Duration *time = nullptr);
 
-    static Matrix<double, Dynamic, Dynamic> &regularize(int iterations, double step, Duration *time = nullptr);
+    static Matrix<double, Dynamic, Dynamic> &regularize(int iterations, double step, const PlotterSettings *pl, Duration *time = nullptr);
 
 private:
     static void setSourceFunction(BilinearInterpol *func);

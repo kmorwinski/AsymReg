@@ -224,7 +224,7 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double step, Duration *time)
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double step, const PlotterSettings *pl, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
@@ -233,9 +233,12 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
     double h = (step > 0.) ? step : H;
 
     /* prepare plotter settings: */
-    ContourPlotterSettings sett;
-    sett.setTitle("regularized data", 1);
-    sett.setAxisSpan({0, 5}, PlotterSettings::Z_Axis);
+    ContourPlotterSettings *sett = nullptr;
+    if (pl != nullptr) {
+        sett = new ContourPlotterSettings;
+        copySettings(pl, sett);
+        sett->setTitle("regularized data", 2);
+    }
 
     std::cout << "Solving ODE with direct Euler method:" << std::endl
               << "  -> step size h = " << H << std::endl
@@ -317,6 +320,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
                     /* translate s to target coord. system: */
                     vec = trInv * vec;
 
+                    /* backproject vector: */
                     Xn_1(k,l) = R_adjoint(vec);
                 }
             }
@@ -327,10 +331,12 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
         }
 
         /* plot lastest iteration result: */
-        sett.setTitle(itrStr, 3);
-        ContourPlotter plotter(&sett, Plotter::Output_Display_Widget);
-        plotter.setData(Xdot);
-        plotter.plot(true);
+        if (sett != nullptr) {
+            sett->setTitle(itrStr, 3);
+            ContourPlotter plotter(sett, Plotter::Output_Display_Widget);
+            plotter.setData(Xdot);
+            plotter.plot(true); // keep open and do not block
+        }
 
         //STDOUT_MATRIX(Xdot);
     } while (++run < max);

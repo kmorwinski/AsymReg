@@ -21,6 +21,18 @@ inline bool operator==(const PlotterSettings::Size &s1, const PlotterSettings::S
     return (s1.wd == s2.wd) && (s1.ht == s2.ht);
 }
 
+void copySettings(const PlotterSettings *from, PlotterSettings *to)
+{
+    to->m_axis = from->m_axis;
+    to->m_axisSpans = from->m_axisSpans;
+    to->m_axisTitles = from->m_axisTitles;
+    to->m_fontIndex = from->m_fontIndex;
+    to->m_imageSize = from->m_imageSize;
+    to->m_page = from->m_page;
+    to->m_pageBorder = from->m_pageBorder;
+    to->m_titles = from->m_titles;
+}
+
 ContourPlotterSettings::ContourPlotterSettings()
     : PlotterSettings()
 {

@@ -4,6 +4,10 @@
 #include <array>
 #include <string>
 
+class PlotterSettings;
+
+void copySettings(const PlotterSettings *from, PlotterSettings *to); // replaces copy-c'tor and assignment operator
+
 #ifdef QT_CORE_LIB
 #  include <QtCore/QString>
 #  include <QtCore/QStringList>
@@ -128,10 +132,15 @@ public:
     void qSetTitles(const QStringList &titles);
 #endif // QT_CORE_LIB
 
+    friend void copySettings(const PlotterSettings *from, PlotterSettings *to);
+
 protected:
     int m_axis; // set by dervived class!
 
 private:
+    PlotterSettings(const PlotterSettings &);            // disable copy c'tor and assignment operator,
+    PlotterSettings &operator=(const PlotterSettings &); // use copySettings() from above
+
     std::array<Span, 3> m_axisSpans;
     std::array<std::string, 3> m_axisTitles;
     std::array<std::string, 4> m_titles;

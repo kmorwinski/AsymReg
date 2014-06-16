@@ -65,8 +65,11 @@ int main(int argc, char **argv)
     print_begin();
     print_line("Running Asymptotical Regularization...");
 
+    ContourPlotterSettings sett;
+    sett.setTitle("Regularisierte Loesung Xdot", 1);
+
     Duration dt2;
-    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0, 0., &dt2);
+    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0, 0., &sett, &dt2);
     //std::cout << "Xdot =" << std::endl
     //          << Xdot << std::endl << std::endl;
 
@@ -74,9 +77,6 @@ int main(int argc, char **argv)
     std::cout << dt2.value() << dt2.unit() << ").";
     print_line_end();
     print_end();
-
-    ContourPlotterSettings sett;
-    sett.setTitle("Regularisierte Loesung Xdot", 1);
 
     ContourPlotter plotter(&sett, Plotter::Output_Display_Widget);
     plotter.setData(Xdot);
