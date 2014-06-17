@@ -232,6 +232,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
 
+    m_Result.setZero();
 
     double h = (step > 0.) ? step : H;
 
@@ -282,9 +283,10 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
                              + " of " + std::to_string(max);
         std::cout << itrStr << std::endl;
 
+        BilinearInterpol biInterp(Xsi, Xsi, Xn);
+        SrcFuncAccOp sfao(&biInterp);
+
         for (int n = 0; n < Sigma.cols(); ++n) {
-            BilinearInterpol biInterp(Xsi, Xsi, Xn);
-            SrcFuncAccOp sfao(&biInterp);
             RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
                     Radon(sfao, squareBound, Sigma.col(n));
 
@@ -331,8 +333,9 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
             //STDOUT_MATRIX(Xn_1);
 
             Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
-            Xn = Xdot; // use regularized data for next iteration step
         }
+
+        Xn = Xdot; // use regularized data for next iteration step
 
         /* plot lastest iteration result: */
         if (sett != nullptr) {
