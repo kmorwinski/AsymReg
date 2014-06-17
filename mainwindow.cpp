@@ -150,13 +150,12 @@ MainWindow::MainWindow()
                           "<br/><br/>"));
 
     /* run configuration widget: */
-    QFormLayout *runConfigLayoutLeft = new QFormLayout;
-    QFormLayout *runConfigLayoutRight = new QFormLayout;
+    QFormLayout *runConfigLayoutLeft = new QFormLayout;  // we use the whole space by using 2 layouts,...
+    QFormLayout *runConfigLayoutRight = new QFormLayout; // ... one on the left & one on the right side
 
-    m_runGridSizeSpinBox = new QSpinBox;
+    m_runGridSizeSpinBox = new QSpinBox; // value is set in readSettings()
     m_runGridSizeSpinBox->setSingleStep(10);
     m_runGridSizeSpinBox->setMaximum(250);
-    m_runGridSizeSpinBox->setValue(ASYMREG_GRID_SIZE);
     m_runGridSizeSpinBox->setDisabled(true); // has no function yet
     runConfigLayoutLeft->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
 
@@ -168,12 +167,11 @@ MainWindow::MainWindow()
     odeLabel->setFont(odeFont);
     runConfigLayoutLeft->setWidget(1, QFormLayout::SpanningRole, odeLabel);
 
-    m_runEulerStepSpinBox = new QDoubleSpinBox;
+    m_runEulerStepSpinBox = new QDoubleSpinBox; // value is set in readSettings()
     m_runEulerStepSpinBox->setDecimals(3);
-    m_runEulerStepSpinBox->setSingleStep(.005);
+    m_runEulerStepSpinBox->setSingleStep(.001);
     m_runEulerStepSpinBox->setRange(.001, 1.);
     m_runEulerStepSpinBox->setAccelerated(true); // values will spin up/down fast
-    m_runEulerStepSpinBox->setValue(H); // set standard constant
     m_runEulerStepSpinBox->setToolTip(tr("Parameter \"h\" used in Euler Solver."));
     runConfigLayoutLeft->addRow(tr("Step Size:"), m_runEulerStepSpinBox);
 
@@ -183,13 +181,12 @@ MainWindow::MainWindow()
     m_runSolverSelectComboBox->addItem(tr("Euler (direct)"));
     runConfigLayoutRight->addRow(tr("Select Solver:"), m_runSolverSelectComboBox);
 
-    m_runEulerIterationSpinBox = new QSpinBox;
+    m_runEulerIterationSpinBox = new QSpinBox; // value is set in readSettings()
     m_runEulerIterationSpinBox->setRange(0, 25); // 0: auto, 1-25: manual
     m_runEulerIterationSpinBox->setSpecialValueText(tr("auto")); // show "auto" when set to 0
-    m_runEulerIterationSpinBox->setValue(T);
     runConfigLayoutRight->addRow(tr("Max. iterations:"), m_runEulerIterationSpinBox);
 
-    QHBoxLayout *runConfigLayout = new QHBoxLayout;
+    QHBoxLayout *runConfigLayout = new QHBoxLayout; // H = horizontal to place them left & right
     runConfigLayout->addLayout(runConfigLayoutLeft);
     runConfigLayout->addLayout(runConfigLayoutRight);
 
@@ -675,6 +672,12 @@ void MainWindow::readSettings()
             }
             settings.endArray();
         settings.endGroup(); // "DataSource"
+        settings.beginGroup("AlgoRuntimeConfig");
+            m_runGridSizeSpinBox->setValue(settings.value("grid-size", ASYMREG_GRID_SIZE).toInt());
+            m_runSolverSelectComboBox->setCurrentIndex(settings.value("solver", 0).toInt());
+            m_runEulerStepSpinBox->setValue(settings.value("euler-step", H).toDouble());
+            m_runEulerIterationSpinBox->setValue(settings.value("euler-iter", T).toInt());
+        settings.endGroup(); // "AlgoRuntimeConfig"
     settings.endGroup(); // "Main"
 
     if (dataSource != nullptr) {
@@ -792,6 +795,12 @@ void MainWindow::saveSettings() const
             } while (++it != list.constEnd());
             settings.endArray();
         settings.endGroup(); // "DataSource"
+        settings.beginGroup("AlgoRuntimeConfig");
+            settings.setValue("grid-size", m_runGridSizeSpinBox->value());
+            settings.setValue("solver", m_runSolverSelectComboBox->currentIndex());
+            settings.setValue("euler-step", m_runEulerStepSpinBox->value());
+            settings.setValue("euler-iter", m_runEulerIterationSpinBox->value());
+        settings.endGroup(); // "AlgoRuntimeConfig"
     settings.endGroup(); // "Main"
 }
 
