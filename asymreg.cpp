@@ -93,6 +93,9 @@ public:
         m_interpol = new Interpol(X, dataValues);
     }
 
+    ~TrgtFuncAccOp()
+    { delete m_interpol; }
+
     template <typename Scalar>
     Scalar operator()(const Scalar s) const
     {
@@ -280,7 +283,8 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
         std::cout << itrStr << std::endl;
 
         for (int n = 0; n < Sigma.cols(); ++n) {
-            SrcFuncAccOp sfao(new BilinearInterpol(Xsi, Xsi, Xn));
+            BilinearInterpol biInterp(Xsi, Xsi, Xn);
+            SrcFuncAccOp sfao(&biInterp);
             RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
                     Radon(sfao, squareBound, Sigma.col(n));
 
@@ -347,6 +351,9 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
         *time = t2 - t1;
 
     std::cout << std::endl; // put another linebreak to stdout for easier reading
+
+    /* delete plottersettings copy: */
+    delete sett;
 
     /* Xdot = Xn + 2hR*{R(Xn)[Y - F(Xn)]} */
     m_Result = Xdot;
