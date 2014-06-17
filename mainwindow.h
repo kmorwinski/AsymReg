@@ -82,6 +82,7 @@ private:
     // members for plotter configuration handling:
     PlotterSettings *m_pressureFunctionPlotSettings;
     QActionGroup *m_plotConfigSelectGroup;
+    QPushButton *m_plotConfigSelectButton;
     QStack<QString> m_plotImageTitleStack;
     bool m_plotConfigChaned;
 

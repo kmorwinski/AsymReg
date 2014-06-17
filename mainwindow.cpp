@@ -277,10 +277,10 @@ MainWindow::MainWindow()
     plotConfigSelectMenu->addActions(m_plotConfigSelectGroup->actions());
     plotConfigSelectMenu->insertSeparator(configurePlotConfigAction);
 
-    QPushButton *plotConfigSelectButton = new QPushButton;
-    plotConfigSelectButton->setText(tr("Select Plotter Configuration"));
-    plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
-    plotConfigSelectButton->setMenu(plotConfigSelectMenu);
+    m_plotConfigSelectButton = new QPushButton;
+    m_plotConfigSelectButton->setText(tr("Select Plotter Configuration"));
+    m_plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
+    m_plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
     /* run asymreg: */
     QPushButton *runAsymRegButton = new QPushButton;
@@ -296,7 +296,7 @@ MainWindow::MainWindow()
     buttonLayout->addWidget(m_dataSourceSaveButton);
     buttonLayout->addWidget(dataSourcePlotButton);
     buttonLayout->addStretch(1);
-    buttonLayout->addWidget(plotConfigSelectButton);
+    buttonLayout->addWidget(m_plotConfigSelectButton);
     buttonLayout->addStretch(2);
 
     QHBoxLayout *middleLayout = new QHBoxLayout;
@@ -348,6 +348,9 @@ MainWindow::MainWindow()
 MainWindow::~MainWindow()
 {
     /* delete class members: */
+    delete m_dataSourceSelectButton->menu(); // found by valgrind
+    delete m_plotConfigSelectButton->menu(); //   ^^ delete our Menu-classes, as they have no parent
+    delete m_pressureFunctionPlotSettings;   // found by valgrind
     delete m_plotWatcher;
 
     /* clean up plot files: */
