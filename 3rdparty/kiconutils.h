@@ -21,7 +21,14 @@
 #ifndef KICONUTILS_H
 #define KICONUTILS_H
 
-#include <kguiaddons_export.h>
+/* <-- lines added/changed by me: */
+//#include <kguiaddons_export.h>
+#ifdef kiconutils_EXPORTS
+#  define KGUIADDONS_EXPORT  Q_DECL_EXPORT
+#else
+#  define KGUIADDONS_EXPORT
+#endif
+/* --> */
 
 #include <QIcon>
 

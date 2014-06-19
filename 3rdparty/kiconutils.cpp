@@ -20,6 +20,7 @@
 
 #include "kiconutils.h"
 
+#include <QHash> // line added by me: QHash was missing and is a member of KOverlayIconEngine
 #include <QIconEngine>
 #include <QPainter>
 
@@ -95,6 +96,9 @@ void KOverlayIconEngine::paint(QPainter *painter, const QRect &rect, QIcon::Mode
         return;
     }
 
+    // Draw ovelay icons a little bit transparent: (no need to save opacity level, painter is deleted afterwards)
+    painter->setOpacity(0.75); // line added by me
+
     const int width = rect.width();
     const int height = rect.height();
     const int iconSize = qMin(width, height);
@@ -127,16 +131,16 @@ void KOverlayIconEngine::paint(QPainter *painter, const QRect &rect, QIcon::Mode
         QPoint startPoint;
         switch (i.key()) {
             case Qt::BottomLeftCorner:
-                startPoint = QPoint(2, height - overlaySize - 2);
+                startPoint = QPoint(0, height - 2 * overlaySize); // line changed by me
                 break;
             case Qt::BottomRightCorner:
-                startPoint = QPoint(width - overlaySize - 2, height - overlaySize - 2);
+                startPoint = QPoint(width - 2 * overlaySize, height - 2 * overlaySize); // line changed by me
                 break;
             case Qt::TopRightCorner:
-                startPoint = QPoint(width - overlaySize - 2, 2);
+                startPoint = QPoint(width - 2 * overlaySize, 0); // line changed by me
                 break;
             case Qt::TopLeftCorner:
-                startPoint = QPoint(2, 2);
+                startPoint = QPoint(0, 0); // line changed by me
                 break;
         }
 
