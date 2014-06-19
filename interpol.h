@@ -41,6 +41,15 @@ protected:
     virtual double rawinterpol(int k, double x) const;
 };
 
+class Projection : public BaseInterpol
+{
+public:
+    Projection(const Eigen::VectorXd &x, const Eigen::VectorXd &y);
+
+protected:
+    virtual double rawinterpol(int k, double x) const;
+};
+
 class SplineInterpol : public BaseInterpol
 {
 public:

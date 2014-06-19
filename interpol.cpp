@@ -152,6 +152,16 @@ double LinearInterpol::rawinterpol(int k, double x) const
     return yd[k] + (x - xd[k]) / (xd[k + 1] - xd[k]) * (yd[k+1] - yd[k]);
 }
 
+Projection::Projection(const VectorXd &x, const VectorXd &y)
+    : BaseInterpol(x, y, 2)
+{
+}
+
+double Projection::rawinterpol(int k, double /*x*/) const
+{
+    return yData()[k];
+}
+
 SplineInterpol::SplineInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, double yp1, double ypn)
     : BaseInterpol(x, y, 2),
       m_y2(x.size())
