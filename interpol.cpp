@@ -12,30 +12,31 @@ BaseInterpol::BaseInterpol(const Eigen::VectorXd &x, const Eigen::VectorXd &y, i
       m_y(y)
 {
     m_indexThreshold = std::min(1, (int)pow((double)m_N, .25));
+
+    if ((m_N < 2) || (m_M < 2) || (m_M > m_N))
+        throw("hunt/bisect size error");
+
+    m_ascending = (x.coeffRef(m_N - 1) >= x.coeffRef(0));
 }
 
 int BaseInterpol::hunt(double x) const
 {
-    if ((m_N < 2) || (m_M < 2) || (m_M > m_N))
-        throw("hunt size error");
-
     const double *xd = m_x.data();
     int kLower = m_lastIndex;
     int kMiddle;
     int kUpper;
-    bool ascending = (xd[m_N - 1] >= xd[0]);
     if ((kLower < 0) || (kLower > m_N - 1)) {
         kLower = 0;
         kUpper = m_N - 1;
     } else {
         int inc = 1;
-        if (x >= xd[kLower] == ascending) { // hunt up
+        if (x >= xd[kLower] == m_ascending) { // hunt up
             while (1) {
                 kUpper = kLower + inc;
                 if (kUpper >= m_N - 1) {
                     kUpper = m_N -1;
                     break;
-                } else if (x < xd[kUpper] == ascending)
+                } else if (x < xd[kUpper] == m_ascending)
                     break;
                 else {
                     kLower = kUpper;
@@ -49,7 +50,7 @@ int BaseInterpol::hunt(double x) const
                 if (kLower <= 0) {
                     kLower = 0;
                     break;
-                } else if (x >= xd[kLower] == ascending)
+                } else if (x >= xd[kLower] == m_ascending)
                     break;
                 else {
                     kUpper = kLower;
@@ -61,7 +62,7 @@ int BaseInterpol::hunt(double x) const
 
     while (kUpper - kLower > 1) {
         kMiddle = (kUpper + kLower) >> 1;
-        if (x >= xd[kMiddle] == ascending)
+        if (x >= xd[kMiddle] == m_ascending)
             kLower = kMiddle;
         else
             kUpper = kMiddle;
@@ -83,17 +84,13 @@ int BaseInterpol::bisect(double x) const
 {
     const double *xd = m_x.data();
 
-    if ((m_N < 2) || (m_M < 2) || (m_M > m_N))
-        throw("locate size error");
-
     int kLower = 0;
     int kUpper = m_N - 1;
-    bool ascending = (xd[m_N - 1] >= xd[0]);
 
     int kMid;
     while(kUpper - kLower > 1) {
         kMid = (kUpper + kLower) >> 1;
-        if (x >= xd[kMid] == ascending)
+        if (x >= xd[kMid] == m_ascending)
             kLower = kMid;
         else
             kUpper = kMid;
@@ -124,8 +121,8 @@ BilinearInterpol::BilinearInterpol(const Eigen::VectorXd &x1, const Eigen::Vecto
 
 double BilinearInterpol::interpol(double x1, double x2) const
 {
-    int i = /*m_x1interpol.m_localIndex ? m_x1interpol.hunt(x1) :*/ m_x1interpol.bisect(x1);
-    int j = /*m_x2interpol.m_localIndex ? m_x2interpol.hunt(x2) :*/ m_x2interpol.bisect(x2);
+    int i = m_x1interpol.m_localIndex ? m_x1interpol.hunt(x1) : m_x1interpol.bisect(x1);
+    int j = m_x2interpol.m_localIndex ? m_x2interpol.hunt(x2) : m_x2interpol.bisect(x2);
 
     double t = (x1 - m_x1interpol.m_x[i])
              / (m_x1interpol.m_x[i+1] - m_x1interpol.m_x[i]);

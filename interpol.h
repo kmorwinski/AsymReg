@@ -13,8 +13,8 @@ public:
 protected:
     virtual double rawinterpol(int k, double x) const = 0;
 
-    const double *xData() const;
-    const double *yData() const;
+    inline const double *xData() const;
+    inline const double *yData() const;
 
 private:
     int hunt(double x) const;
@@ -27,6 +27,7 @@ private:
     mutable int m_lastIndex;
     int m_M;
     int m_N;
+    bool m_ascending;
 
     friend class BilinearInterpol;
 };
