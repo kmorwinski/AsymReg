@@ -24,6 +24,7 @@
 #include <QtGui/QPushButton>
 #include <QtGui/QSpinBox>
 #include <QtGui/QStatusBar>
+#include <QtGui/QScrollArea>
 #include <QtGui/QToolBar>
 #include <QtGui/QToolTip>
 #include <QtGui/QTableWidget>
@@ -279,15 +280,7 @@ MainWindow::MainWindow()
     m_plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
     m_plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
-    /* run asymreg: */
-    QPushButton *runAsymRegButton = new QPushButton;
-    runAsymRegButton->setText(tr("&Run Asymptotical Regularization"));
-    runAsymRegButton->setToolTip(tr("Starts the mathematical part of this programm."));
-    runAsymRegButton->setIcon(QIcon::fromTheme("media-playback-start"));
-    connect(runAsymRegButton, SIGNAL(clicked(bool)),
-            this, SLOT(runAsymReg()));
-
-    /* layout(s): */
+    /* buttons' layout: */
     QVBoxLayout *buttonLayout = new QVBoxLayout;
     buttonLayout->addWidget(m_dataSourceSelectButton);
     buttonLayout->addWidget(m_dataSourceSaveButton);
@@ -296,17 +289,40 @@ MainWindow::MainWindow()
     buttonLayout->addWidget(m_plotConfigSelectButton);
     buttonLayout->addStretch(2);
 
+    /* Area with Scrollbar for all "main"/"middle" widgets: */
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addWidget(m_dataSourceTableWidget);
     middleLayout->addLayout(buttonLayout);
 
+    QWidget *middleWidget = new QWidget;
+    middleWidget->setLayout(middleLayout);
+
+    QScrollArea *middleArea = new QScrollArea;
+    middleArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    middleArea->setWidget(middleWidget);
+    middleArea->setWidgetResizable(true); // widgets will fill available space
+
+    /* run asymreg: */
+    m_runAsymRegButton = new QPushButton;
+    m_runAsymRegButton->setCheckable(true); // button will stay pressed until regularization is finished
+    m_runAsymRegButton->setText(tr("&Run Asymptotical Regularization"));
+    m_runAsymRegButton->setToolTip(tr("Starts the mathematical part of this programm."));
+    m_runAsymRegButton->setIcon(QIcon::fromTheme("media-playback-start"));
+
+    connect(m_runAsymRegButton, SIGNAL(toggled(bool)), // disable middleArea Widget when button is checked
+            middleArea, SLOT(setDisabled(bool)));
+    connect(m_runAsymRegButton, SIGNAL(toggled(bool)), // disable runConfigGroupBox -"-
+            runConfigGroupBox, SLOT(setDisabled(bool)));
+    connect(m_runAsymRegButton, SIGNAL(clicked(bool)), // trigger runAsymReg() function
+            this, SLOT(runAsymReg()));
+
+    /* central widget with layout: */
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(infoLabel);
     layout->addWidget(runConfigGroupBox, 0);
-    layout->addLayout(middleLayout, 1);
-    layout->addWidget(runAsymRegButton);
+    layout->addWidget(middleArea, 1);
+    layout->addWidget(m_runAsymRegButton);
 
-    /* central widget: */
     setCentralWidget(new QWidget); // our Central-Widget is just an empty QWidget...
     centralWidget()->setLayout(layout); // ...which holds the main layout
 
@@ -332,8 +348,8 @@ MainWindow::MainWindow()
     selectPlotConfig(currentPlotConfigAction); // read preset file, TODO: Move to readSettings()
 
     /* make 'Enter' key hit the run-Button: */
-    runAsymRegButton->setDefault(true);
-    runAsymRegButton->setFocus();
+    m_runAsymRegButton->setDefault(true);
+    m_runAsymRegButton->setFocus();
 
     /* auto run regularization (this is more a debug option): */
     if (m_autoRunAction->isChecked()) {
@@ -726,6 +742,8 @@ void MainWindow::runAsymReg()
     plotter.setData(X);
 
     m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
+    m_runAsymRegButton->setChecked(false); // raise button so it can be pressed again
+                                           // will also automatically enable widgets
 }
 
 void MainWindow::saveDataSource()

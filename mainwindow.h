@@ -76,6 +76,7 @@ private:
     // members for run configuration:
     QComboBox *m_runSolverSelectComboBox;
     QDoubleSpinBox *m_runEulerStepSpinBox;
+    QPushButton *m_runAsymRegButton;
     QSpinBox *m_runEulerIterationSpinBox;
     QSpinBox *m_runGridSizeSpinBox;
 
