@@ -334,10 +334,10 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
             }
             //STDOUT_MATRIX(Xn_1);
 
-            Xdot += 1./double(N) * (Xn + 2*h*Xn_1);
+            Xdot += (2./double(N) * h) * Xn_1;
         }
 
-        Xn = Xdot; // use regularized data for next iteration step
+        Xn += Xdot; // use regularized data for next iteration step
 
         /* plot lastest iteration result: */
         if (sett != nullptr) {
