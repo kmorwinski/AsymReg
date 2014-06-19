@@ -37,6 +37,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "3rdparty/kiconutils.h"
+
 #include "asymreg.h"
 #include "constants.h"
 #include "duration.h"
@@ -119,7 +121,9 @@ MainWindow::MainWindow()
     m_autoPlotAction = new QAction(this);
     m_autoPlotAction->setText(tr("Auto Plot"));
     //m_autoPlotAction->setToolTip();
-    m_autoPlotAction->setIcon(QIcon::fromTheme("image-x-generic"));
+    m_autoPlotAction->setIcon(KIconUtils::addOverlay(QIcon::fromTheme("image-x-generic"),
+                                                     QIcon::fromTheme("media-seek-forward"),
+                                                     Qt::BottomLeftCorner));
     m_autoPlotAction->setCheckable(true); // state will be set in readSettings(), default "true"
 
     m_autoRunAction = new QAction(this);

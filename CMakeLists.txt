@@ -53,6 +53,9 @@ add_definitions(-DEIGEN_DENSEBASE_ADDONS_FILE=\"${PROJECT_SOURCE_DIR}/eigen_dens
 set(DISLIN_PATH "/usr/local/dislin")
 set(DISLIN_LIB "discpp")
 
+# 3rdparty sources & libraries
+add_subdirectory(3rdparty) # this will set 3rdparty_SRCS & 3rdparty_HDRS
+
 # source files
 set(asymreg_COMMON_SRCS
     asymreg.cpp
@@ -108,11 +111,14 @@ target_link_libraries(${asymreg_BIN}
     ${QTIOCOMPRESSOR_LIBRARY}
     ${QJSON_LIBRARIES}
     ${DISLIN_LIB}
+    kiconutils                # this will find libkiconutils.so in build-dir automatically
 )
 
 target_link_libraries(${asymreg_cl_BIN}
     ${DISLIN_LIB}
 )
+
+add_dependencies(${asymreg_BIN} kiconutils) # libkiconutils.so needs to be build for gui target
 
 set_target_properties(${asymreg_BIN} PROPERTIES
     AUTOMOC true # enable MOC on GUI target
