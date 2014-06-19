@@ -514,6 +514,15 @@ void MainWindow::closeIntermediatePlotter()
     Plotter::closeAllRemainingPlotter(); // close windows to clean workspace
     if (m_closeIntermediatePlotterButton != nullptr)
         m_closeIntermediatePlotterButton->hide();
+
+    /* also close all svg viewer */
+    if (!m_svgViewerList.isEmpty()) {
+        auto it = m_svgViewerList.begin();
+        do {
+            if (*it)
+                (*it)->close();
+        } while (++it != m_svgViewerList.end());
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
