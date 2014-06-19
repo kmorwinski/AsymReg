@@ -301,8 +301,10 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
             Matrix<double, 1, numSamples> DiffTimesRadon = RadonData.cwiseProduct(Diff); // DiffTimesRadon = R(Xn) * Diff
             //STDOUT_MATRIX(DiffTimesRadon);
 
-            TrgtFuncAccOp<LinearInterpol> tfao(DiffTimesRadon);
-            Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
+            //TrgtFuncAccOp<LinearInterpol> tfao(DiffTimesRadon);
+            //Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
+            TrgtFuncAccOp<Projection> tfao(DiffTimesRadon);
+            Backprojection<TrgtFuncAccOp<Projection> > R_adjoint(tfao, Sigma.col(n));
 
             Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE); // temporary matrix for backprojected data
             for (int k = 0; k < ASYMREG_GRID_SIZE; ++k) {
