@@ -354,5 +354,5 @@ QMap<QString, QVariant> PlotterSettings::zAxisSpan() const
 
     return ret;
 }
-#  include "plottersettings.moc"
+#  include "moc_plottersettings.cpp"
 #endif // QT_CORE_LIB

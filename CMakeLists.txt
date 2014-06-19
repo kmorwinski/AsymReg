@@ -1,13 +1,15 @@
 # CMake Project
 project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
+set(CMAKE_INCLUDE_CURRENT_DIR ON) # include build dir
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_VERBOSE_MAKEFILE 1) # verbose compiler output
+
+# set some project variables
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 set(asymreg_cl_BIN "${asymreg_BIN}-cl")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" asymreg_BUILD_TYPE)
-
-#set(asymreg_OPTI "-O3") #uncomment to overwrite CMAKE_BUILD_TYPE's default compiler optimisation level
-#set(CMAKE_VERBOSE_MAKEFILE 1) # verbose compiler output
+set(asymreg_OPTI "-O3") #uncomment to overwrite CMAKE_BUILD_TYPE's default compiler optimisation level
 
 # Compiler Flags
 include(CheckBuildType)
@@ -78,23 +80,15 @@ set(asymreg_GUI_SRCS
 
 set(asymreg_GUI_HDRS "")
 
-# set proper include dirs:
+# set proper include dirs
 include_directories(
     ${QTIOCOMPRESSOR_INCLUDE_DIR}
     ${QJSON_INCLUDE_DIR}
     ${EIGEN3_INCLUDE_DIR}
     ${DISLIN_PATH}
-    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# build & link executables:
-qt4_automoc(
-    ${asymreg_GUI_SRCS}
-    ${asymreg_GUI_HDRS}
-    ${asymreg_COMMON_SRCS}
-    ${asymreg_COMMON_HDRS}
-)
-
+# build & link executables
 add_executable(${asymreg_BIN} # gui target
     ${asymreg_COMMON_SRCS}
     ${asymreg_COMMON_HDRS}
@@ -118,6 +112,10 @@ target_link_libraries(${asymreg_BIN}
 
 target_link_libraries(${asymreg_cl_BIN}
     ${DISLIN_LIB}
+)
+
+set_target_properties(${asymreg_BIN} PROPERTIES
+    AUTOMOC true # enable MOC on GUI target
 )
 
 # Remove Qt4 definitions from cl-build. Otherwise it will fail!!!

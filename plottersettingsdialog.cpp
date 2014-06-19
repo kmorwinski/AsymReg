@@ -393,4 +393,4 @@ void PlotterSettingsDialog::swapImageDimension()
     m_widthSpinBox->setValue(h);
 }
 
-#include "plottersettingsdialog.moc"
+#include "moc_plottersettingsdialog.cpp"

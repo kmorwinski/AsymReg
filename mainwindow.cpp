@@ -1006,4 +1006,4 @@ void MainWindow::showSvgViewer(const QString &path)
     m_plotTime = QDateTime::currentDateTime();
 }
 
-#include "mainwindow.moc"
+#include "moc_mainwindow.cpp"

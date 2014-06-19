@@ -204,4 +204,4 @@ bool SvgViewer::saveImage()
     return success;
 }
 
-#include "svgviewer.moc"
+#include "moc_svgviewer.cpp"
