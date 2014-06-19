@@ -104,8 +104,7 @@ public:
 MainWindow::MainWindow()
     : m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
-      m_dataSourceChanged(false),
-      m_closeIntermediatePlotterButton(nullptr)
+      m_dataSourceChanged(false)
 {
     /* window properties: */
     setWindowTitle(tr("Main[*] - %1").arg(qApp->applicationName()));
@@ -126,6 +125,16 @@ MainWindow::MainWindow()
                                                      Qt::BottomLeftCorner));
     m_autoPlotAction->setCheckable(true); // state will be set in readSettings(), default "true"
 
+    m_closeAllPlotsAction = new QAction(this);
+    m_closeAllPlotsAction->setText(tr("Close All Plots"));
+    //m_closeAllPlotsAction->setToolTip(); // TODO
+    m_closeAllPlotsAction->setIcon(KIconUtils::addOverlay(QIcon::fromTheme("image-x-generic"),
+                                                          QIcon::fromTheme("window-close"),
+                                                          Qt::BottomLeftCorner));
+    m_closeAllPlotsAction->setDisabled(true); // will be enabled after plotting
+    connect(m_closeAllPlotsAction, SIGNAL(triggered()),
+            this, SLOT(closeAllPlots()));
+
     m_autoRunAction = new QAction(this);
     m_autoRunAction->setText(tr("Auto Run"));
     m_autoRunAction->setToolTip(tr("Autostarts the Asymptotical Regularization on program startup."));
@@ -135,9 +144,11 @@ MainWindow::MainWindow()
     QToolBar *toolBar = new QToolBar;
     toolBar->addAction(quitAction);
     toolBar->addAction(m_autoPlotAction);
+    toolBar->addAction(m_closeAllPlotsAction);
     toolBar->addAction(m_autoRunAction);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolBar->insertSeparator(m_autoPlotAction); // separator between quit and autoplot
+    toolBar->insertSeparator(m_autoRunAction);  // separator between close-all-plots and autorun
     toolBar->setMovable(false);
     toolBar->setObjectName("mainToolBar"); // shutdown warning from QSettings
     addToolBar(Qt::TopToolBarArea, toolBar);
@@ -513,11 +524,10 @@ void MainWindow::changedPlotConfig()
     setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
 }
 
-void MainWindow::closeIntermediatePlotter()
+void MainWindow::closeAllPlots()
 {
-    Plotter::closeAllRemainingPlotter(); // close windows to clean workspace
-    if (m_closeIntermediatePlotterButton != nullptr)
-        m_closeIntermediatePlotterButton->hide();
+    /* close all non-blocking dislin-xwin plotter: */
+    Plotter::closeAllRemainingPlotter();
 
     /* also close all svg viewer */
     if (!m_svgViewerList.isEmpty()) {
@@ -527,11 +537,15 @@ void MainWindow::closeIntermediatePlotter()
                 (*it)->close();
         } while (++it != m_svgViewerList.end());
     }
+
+    /* disable action again until another graf is plotted: */
+    m_closeAllPlotsAction->setDisabled(true);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    closeIntermediatePlotter();
+    Plotter::closeAllRemainingPlotter(); // close all non-blocking dislin-xwin plotter
+    m_closeAllPlotsAction->setDisabled(true); // disable qaction for now (look few lines below)
 
     if (isWindowModified()) {
         if (m_dataSourceChanged) {
@@ -558,6 +572,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
                 bool closed = (*it)->close();
                 if (!closed) {
                     event->ignore();
+                    m_closeAllPlotsAction->setDisabled(false); // okay we do need this qaction
                     return;
                 }
             }
@@ -670,6 +685,9 @@ void MainWindow::plotDataSource()
     plotter.setData(Z);
 
     m_plotImageTitleStack.push(tr("Transducer Pressure"));
+
+    /* enable close-action: */
+    m_closeAllPlotsAction->setEnabled(true);
 }
 
 void MainWindow::readSettings()
@@ -733,19 +751,6 @@ void MainWindow::runAsymReg()
                                 autoPlot ? m_pressureFunctionPlotSettings : nullptr,
                                 &dur);
 
-    if (autoPlot) {
-        if (m_closeIntermediatePlotterButton == nullptr) {
-            m_closeIntermediatePlotterButton = new QPushButton;
-            m_closeIntermediatePlotterButton->setToolTip(tr("Close Opened Intermediate Plotter"));
-            m_closeIntermediatePlotterButton->setIcon(QIcon::fromTheme("window-close"));
-            m_closeIntermediatePlotterButton->setFlat(true);
-            connect(m_closeIntermediatePlotterButton, SIGNAL(clicked()),
-                    this, SLOT(closeIntermediatePlotter()));
-            statusBar()->addPermanentWidget(m_closeIntermediatePlotterButton);
-        } else
-            m_closeIntermediatePlotterButton->setHidden(false);
-    }
-
     auto dt = dur.value();
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
@@ -755,6 +760,7 @@ void MainWindow::runAsymReg()
     plotter.setData(X);
 
     m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
+    m_closeAllPlotsAction->setEnabled(true); // enable close-action
     m_runAsymRegButton->setChecked(false); // raise button so it can be pressed again
                                            // will also automatically enable widgets
 }

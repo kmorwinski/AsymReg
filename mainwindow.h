@@ -41,10 +41,10 @@ private slots:
     void changedPlotConfig();
 
     // Asymptotical Regularization:
-    void closeIntermediatePlotter();
     void runAsymReg();
 
     // private slots for viewing plots:
+    void closeAllPlots();
     void showSvgViewer(const QString &path);
 
 private:
@@ -96,13 +96,13 @@ private:
 
     // members for viewing plots:
     QAction *m_autoPlotAction;
+    QAction *m_closeAllPlotsAction;
     QList<QPointer<SvgViewer> > m_svgViewerList;
     QDateTime m_plotTime;
     QFileSystemWatcher *m_plotWatcher;
 
     // other:
     QAction *m_autoRunAction;
-    QPushButton *m_closeIntermediatePlotterButton;
 };
 
 #endif // MAINWINDOW_H_
