@@ -120,25 +120,20 @@ set_target_properties(${asymreg_BIN} PROPERTIES
 
 # Remove Qt4 definitions from cl-build. Otherwise it will fail!!!
 get_property(asymreg_DEFS DIRECTORY PROPERTY COMPILE_DEFINITIONS) # get all current definitions
+set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS )             # and unset them (DIRECTORY=global)
 
 set(asymreg_cl_DEFS)
 foreach(itr ${asymreg_DEFS})
-    if(NOT itr MATCHES "QT_.*") # regexp mathes all -DQT_CORE_LIB, -DQT_GUI_LIB, etc.
+    if(NOT itr MATCHES "QT_.*") # regexp matches all -DQT_CORE_LIB, -DQT_GUI_LIB, etc.
         list(APPEND asymreg_cl_DEFS ${itr}) # add to list, if it didn't match
     endif()
 endforeach()
 
-set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS) # unset all (DIRECTORY=global) definitions
-set_property(TARGET ${asymreg_BIN}
-    PROPERTY COMPILE_DEFINITIONS ${asymreg_DEFS} # set them again for gui build
+set_target_properties(${asymreg_BIN} PROPERTIES
+    COMPILE_DEFINITIONS "${asymreg_DEFS}" # set them again for gui build
 )
-set_property(TARGET ${asymreg_cl_BIN}
-    PROPERTY COMPILE_DEFINITIONS ${asymreg_cl_DEFS} # build cl without Qt4
-)
-
-# intall
-install(TARGETS ${asymreg_BIN} ${asymreg_cl_BIN}
-    RUNTIME DESTINATION bin
+set_target_properties(${asymreg_cl_BIN} PROPERTIES
+    COMPILE_DEFINITIONS "${asymreg_cl_DEFS}" # build cl without Qt4
 )
 
 # dummy project for additional files to show up in project tree
