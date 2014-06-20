@@ -593,23 +593,21 @@ void MainWindow::dataSourceChanged(QTableWidgetItem *item)
     int col = m_dataSourceTableWidget->column(item);
     int row = m_dataSourceTableWidget->row(item);
 
+    /* does item have a valid double value? */
     if (!ok) {
-        // restore data:
-        const QString v = QString("%L1").arg(zMat.coeff(row,col), 0, 'f');
+        /* no -> restore old value in item: */
+        QString v = QString("%L1").arg(zMat.coeff(row,col), 0, 'f');
         item->setData(Qt::DisplayRole, v);
-        item->setData(Qt::BackgroundRole, QVariant());
-
-        return;
+    } else {
+        /* yes -> set new value in zMat & mark as unsaved: */
+        zMat(row, col) = d;
+        item->setData(Qt::BackgroundRole, Qt::green);                 // mark item with green color
+        m_dataSourceChanged = true;                                   // make sure we know what has changed
+        m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);      // enable saving of data
+        setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
     }
 
-    // set data & mark as unsaved
-    zMat(row, col) = d;
-    item->setData(Qt::BackgroundRole, Qt::green);
-    m_dataSourceChanged = true; // make sure we know what has changed
-    m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);
-    setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
-
-    m_dataSourceTableWidget->blockSignals(false);
+    m_dataSourceTableWidget->blockSignals(false); // enable signal/slot mechanism again
 }
 
 void MainWindow::discardDataSource()
