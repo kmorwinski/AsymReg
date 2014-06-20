@@ -77,6 +77,8 @@ public:
     };
 
     PlotterSettings();
+    PlotterSettings(const PlotterSettings &) = delete;            // disable copy c'tor and assignment operator,
+    PlotterSettings &operator=(const PlotterSettings &) = delete; // use copySettings() from above
 
     int axis() const;
 
@@ -138,9 +140,6 @@ protected:
     int m_axis; // set by dervived class!
 
 private:
-    PlotterSettings(const PlotterSettings &);            // disable copy c'tor and assignment operator,
-    PlotterSettings &operator=(const PlotterSettings &); // use copySettings() from above
-
     std::array<Span, 3> m_axisSpans;
     std::array<std::string, 3> m_axisTitles;
     std::array<std::string, 4> m_titles;
