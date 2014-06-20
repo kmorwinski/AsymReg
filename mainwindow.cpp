@@ -746,19 +746,37 @@ void MainWindow::runAsymReg()
     const Matrix<double, Dynamic, Dynamic> &X =
             AsymReg::regularize(m_runEulerIterationSpinBox->value(),
                                 m_runEulerStepSpinBox->value(),
-                                autoPlot ? m_pressureFunctionPlotSettings : nullptr,
+                                /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,
                                 &dur);
 
     auto dt = dur.value();
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
-    Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
-    ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
-    plotter.setData(X);
+    if (autoPlot) {
+        QString t2, t3, t4;
+        t2 = "regularized";
+        t3 = "[" + m_runSolverSelectComboBox->currentText() + ": "
+                + QString::number(m_runEulerIterationSpinBox->value()) + " iteration(s), step "
+                + QString::number(m_runEulerStepSpinBox->value(), 'f', 3) + "]";
+        t4 = "[ mean error ]";
 
-    m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
-    m_closeAllPlotsAction->setEnabled(true); // enable close-action
+        Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
+        ContourPlotterSettings sett;
+        copySettings(m_pressureFunctionPlotSettings, &sett);
+        sett.setTitle(t2.toStdString(), 2);
+        sett.setTitle(t3.toStdString(), 3);
+        sett.setTitle(t4.toStdString(), 4);
+
+        ContourPlotter plotter(&sett, Plotter::Output_SVG_Image);
+        plotter.setData(X);
+
+        m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
+
+        /* enable close-action: */
+        m_closeAllPlotsAction->setEnabled(true);
+    }
+
     m_runAsymRegButton->setChecked(false); // raise button so it can be pressed again
                                            // will also automatically enable widgets
 }
