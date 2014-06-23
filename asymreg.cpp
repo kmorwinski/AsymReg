@@ -9,6 +9,7 @@
 #include "duration.h"
 #include "eigen.h"
 #include "interpol.h"
+#include "ode.h"
 #include "plotter.h"
 #include "plottersettings.h"
 #include "radonoperator.h"
@@ -379,14 +380,12 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
 
             derivs(n, Xn, dXdt[n]);
             //STDOUT_MATRIX(dXdt);
-
-            Xdot += (1./double(N) * h) * dXdt[n];
         }
 
-            Xdot += (2./double(N) * h) * Xn_1;
+            ODE::euler(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
         }
 
-        Xn += Xdot; // use regularized data for next iteration step
+        Xn = Xdot; // use regularized data for next iteration step
 
         /* plot lastest iteration result: */
         if (sett != nullptr) {
