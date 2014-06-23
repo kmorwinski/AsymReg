@@ -21,6 +21,10 @@
 // namespaces:
 using hrc = std::chrono::high_resolution_clock;
 
+// local/private functions:
+static void squareBound(double, double *, double *);
+
+// template classes:
 /**
  * @brief Little helper class to transform coordinates from target
  *        to physical coord. system and get data from Asymreg::sourceFunction().
@@ -111,6 +115,90 @@ public:
 
 private:
     Interpol *m_interpol;
+};
+
+/**
+ * @brief Class which holds the right-hand-side of our regularization formula.
+ */
+template <typename DerivedMatrix, typename DerivedVector, typename OtherDerivedMatrix>
+class DerivateOperator
+{
+public:
+    DerivateOperator(const EigenBase<DerivedMatrix> &Sigma,
+                     const EigenBase<DerivedVector> &S, const EigenBase<DerivedVector> &Xsi,
+                     const DerivedVector *DataSets)
+        : m_Sigma(Sigma.derived()),
+          m_S(S.derived()),
+          m_Xsi(Xsi.derived()),
+          m_DataSet(DataSets)
+    {
+        EIGEN_STATIC_ASSERT_VECTOR_ONLY(DerivedVector);
+        assert(DataSets != nullptr);
+    }
+
+    template <typename Derived, typename OtherDerived>
+    void operator()(const int n, const EigenBase<Derived> &Xin, EigenBase<OtherDerived> &Xout)
+    {
+        typedef typename OtherDerivedMatrix::Scalar Scalar;
+
+        constexpr int numSamples = 2/AR_TRGT_SMPL_RATE + 1;
+
+        BilinearInterpol interp(m_Xsi, m_Xsi, Xin);
+        SrcFuncAccOp sfao(&interp);
+
+        RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
+                Radon(sfao, squareBound, m_Sigma.col(n));
+
+        Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
+        for (int j = 0; j < m_S.cols(); ++j)
+            RadonData[j] = Radon(m_S.coeffRef(j));
+
+        Matrix<double, 1, numSamples> SchlierenData; // temporary vector for schlieren data
+        SchlierenData = RadonData.cwiseProduct(RadonData);
+
+        Matrix<double, 1, numSamples> Diff = m_DataSet[n] - SchlierenData; // Diff = Y_delta - F(Xn)
+        Matrix<double, 1, numSamples> DiffTimesRadon = RadonData.cwiseProduct(Diff); // DiffTimesRadon = R(Xn) * Diff
+        //STDOUT_MATRIX(DiffTimesRadon);
+
+        TrgtFuncAccOp<Projection> tfao(DiffTimesRadon);
+        Backprojection<TrgtFuncAccOp<Projection> > R_adjoint(tfao, m_Sigma.col(n));
+
+        //Matrix<double, Dynamic, Dynamic> Xout(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE); // temporary matrix for backprojected data
+        Xout.derived().setZero(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE);
+        for (int k = 0; k < ASYMREG_GRID_SIZE; ++k) {
+            for (int l = 0; l < ASYMREG_GRID_SIZE; ++l) {
+                Matrix<double, 2, 1> vec;
+                vec << m_Xsi(k), m_Xsi(l);
+
+                /* trInv:
+                 * ======
+                 * Inverse coordinate transformation from target coord. system
+                 * (r,s) \in [0,1]^2 to physical coord. system (x,y) = [0,10]^2
+                 * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
+                 *  => tr(r,s) = (3*r+5, 3*s+5)
+                 *  => trInv(x,y) = tr.inverse()(x,y) = (0.333*[x-5], 0.333*[y-5])
+                 *
+                 * Todo: documents want (r,s) = D^1  (unit disc)
+                 */
+                static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+                //STDOUT_MATRIX(trInv);
+
+                /* translate s to target coord. system: */
+                vec = trInv * vec;
+
+                /* backproject vector: */
+                Xout.derived()(k,l) = 2. * R_adjoint(vec);
+            }
+        }
+
+        //STDOUT_MATRIX(Xout);
+    }
+
+private:
+    const DerivedMatrix &m_Sigma;
+    const DerivedVector &m_S;
+    const DerivedVector &m_Xsi;
+    const DerivedVector *m_DataSet;
 };
 
 // init static members:
@@ -283,56 +371,17 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
                              + " of " + std::to_string(max);
         std::cout << itrStr << std::endl;
 
-        BilinearInterpol biInterp(Xsi, Xsi, Xn);
-        SrcFuncAccOp sfao(&biInterp);
+        DerivateOperator<MatrixXd, RowVectorXd, MatrixXd> derivs(Sigma, S, Xsi, &m_DataSet[0]);
+        Matrix<double , Dynamic, Dynamic> dXdt[N];
 
         for (int n = 0; n < Sigma.cols(); ++n) {
-            RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
-                    Radon(sfao, squareBound, Sigma.col(n));
+            dXdt[n].resizeLike(Xn);
 
-            Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
-            for (Index j = 0; j < S.cols(); ++j)
-                RadonData[j] = Radon(S.coeffRef(j));
+            derivs(n, Xn, dXdt[n]);
+            //STDOUT_MATRIX(dXdt);
 
-            Matrix<double, 1, numSamples> SchlierenData; // temporary vector for schlieren data
-            SchlierenData = RadonData.cwiseProduct(RadonData);
-
-            Matrix<double, 1, numSamples> Diff = m_DataSet[n] - SchlierenData; // Diff = Y_delta - F(Xn)
-            Matrix<double, 1, numSamples> DiffTimesRadon = RadonData.cwiseProduct(Diff); // DiffTimesRadon = R(Xn) * Diff
-            //STDOUT_MATRIX(DiffTimesRadon);
-
-            //TrgtFuncAccOp<LinearInterpol> tfao(DiffTimesRadon);
-            //Backprojection<TrgtFuncAccOp<LinearInterpol> > R_adjoint(tfao, Sigma.col(n));
-            TrgtFuncAccOp<Projection> tfao(DiffTimesRadon);
-            Backprojection<TrgtFuncAccOp<Projection> > R_adjoint(tfao, Sigma.col(n));
-
-            Matrix<double, Dynamic, Dynamic> Xn_1(ASYMREG_GRID_SIZE, ASYMREG_GRID_SIZE); // temporary matrix for backprojected data
-            for (int k = 0; k < ASYMREG_GRID_SIZE; ++k) {
-                for (int l = 0; l < ASYMREG_GRID_SIZE; ++l) {
-                    Matrix<double, 2, 1> vec;
-                    vec << Xsi(k), Xsi(l);
-
-                    /* trInv:
-                     * ======
-                     * Inverse coordinate transformation from target coord. system
-                     * (r,s) \in [0,1]^2 to physical coord. system (x,y) = [0,10]^2
-                     * We want: tr(r,s) = (x,y)|T = [2,8]^2  for r,s=0,...,1
-                     *  => tr(r,s) = (3*r+5, 3*s+5)
-                     *  => trInv(x,y) = tr.inverse()(x,y) = (0.333*[x-5], 0.333*[y-5])
-                     *
-                     * Todo: documents want (r,s) = D^1  (unit disc)
-                     */
-                    static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
-                    //STDOUT_MATRIX(trInv);
-
-                    /* translate s to target coord. system: */
-                    vec = trInv * vec;
-
-                    /* backproject vector: */
-                    Xn_1(k,l) = R_adjoint(vec);
-                }
-            }
-            //STDOUT_MATRIX(Xn_1);
+            Xdot += (1./double(N) * h) * dXdt[n];
+        }
 
             Xdot += (2./double(N) * h) * Xn_1;
         }
