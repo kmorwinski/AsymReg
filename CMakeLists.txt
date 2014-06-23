@@ -34,6 +34,12 @@ else()
     message(FATAL_ERROR "C++11 standard is requiered for this project!")
 endif()
 
+# OpenMp
+find_package(OpenMP)
+if(OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
 # QT 4.8
 find_package(Qt4 4.8 COMPONENTS QtCore QtGui QtSvg REQUIRED)
 include(${QT_USE_FILE}) # sets -DQT_NO_DEBUG and other useful things

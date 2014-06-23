@@ -14,6 +14,7 @@ void euler(const int angles, const EigenBase<Derived> &X, const Derived *dXdt,
 
     Xout.derived() = X;
 
+    #pragma omp parallel for
     for (Index i = 0; i < angles; ++i)
         Xout.derived() += (h / Scalar(angles)) * dXdt[i];
 }
@@ -31,6 +32,7 @@ void rk2(const int angles, const EigenBase<Derived> &X, const Derived *dXdt,
 
     Derived K1, K2;
 
+    #pragma omp parallel for
     for (int i = 0; i < angles; ++i) {
         K1 = .5 * h * dXdt[i];
         derivs(i, K1 + X.derived(), K2);
@@ -50,6 +52,7 @@ void rk4(const int angles, const EigenBase<Derived> &X, const Derived *dXdt,
 
     Derived K1, K2, K3, K4;
 
+    #pragma omp parallel for
     for (int i = 0; i < angles; ++i) {
         K1 = .5 * h * dXdt[i];
         derivs(i,          K1 + X.derived(), K2);
