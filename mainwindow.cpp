@@ -194,7 +194,12 @@ MainWindow::MainWindow()
     runConfigLayoutRight->addRow(QString(" "), new QWidget); // dummy
 
     m_runSolverSelectComboBox = new QComboBox;
-    m_runSolverSelectComboBox->addItem(tr("Euler (direct)"));
+    m_runSolverSelectComboBox->addItem(tr("Euler (direct)"),
+                                       QVariant::fromValue<unsigned int>(AsymReg::Euler));
+    m_runSolverSelectComboBox->addItem(tr("Midpoint (2nd order)"),
+                                       QVariant::fromValue<unsigned int>(AsymReg::Midpoint));
+    m_runSolverSelectComboBox->addItem(tr("Runge Kutta (4th order)"),
+                                       QVariant::fromValue<unsigned int>(AsymReg::RungeKutta));
     runConfigLayoutRight->addRow(tr("Select Solver:"), m_runSolverSelectComboBox);
 
     m_runEulerIterationSpinBox = new QSpinBox; // value is set in readSettings()
@@ -742,9 +747,13 @@ void MainWindow::runAsymReg()
 
     AsymReg::generateDataSet();
 
+    AsymReg::ODE_Solver solver = static_cast<AsymReg::ODE_Solver>(
+                m_runSolverSelectComboBox->itemData(m_runSolverSelectComboBox->currentIndex())
+                .value<unsigned int>());
     Duration dur;
     const Matrix<double, Dynamic, Dynamic> &X =
-            AsymReg::regularize(m_runEulerIterationSpinBox->value(),
+            AsymReg::regularize(solver,
+                                m_runEulerIterationSpinBox->value(),
                                 m_runEulerStepSpinBox->value(),
                                 /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,
                                 &dur);

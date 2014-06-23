@@ -316,7 +316,7 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double step, const PlotterSettings *pl, Duration *time)
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int iterations, double step, const PlotterSettings *pl, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
@@ -382,7 +382,16 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int iterations, double ste
             //STDOUT_MATRIX(dXdt);
         }
 
+        switch (solver) {
+        case Euler:
             ODE::euler(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+            break;
+        //case Midpoint:
+        //    ODE::rk2(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+        //    break;
+        //case RungeKutta:
+        //    ODE::rk4(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+        //    break;
         }
 
         Xn = Xdot; // use regularized data for next iteration step

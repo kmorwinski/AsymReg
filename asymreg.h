@@ -26,7 +26,14 @@ public:
 
     static void generateDataSet(Duration *time = nullptr);
 
-    static Matrix<double, Dynamic, Dynamic> &regularize(int iterations, double step, const PlotterSettings *pl, Duration *time = nullptr);
+    enum ODE_Solver {
+        Euler,
+        Midpoint,  // RK2
+        RungeKutta // RK4
+    };
+
+    static Matrix<double, Dynamic, Dynamic> &regularize(ODE_Solver solver, int iterations, double step,
+                                                        const PlotterSettings *pl, Duration *time = nullptr);
 
 private:
     static void setSourceFunction(BilinearInterpol *func);
