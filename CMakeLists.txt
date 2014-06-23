@@ -3,7 +3,7 @@ project(asymreg)
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_INCLUDE_CURRENT_DIR ON) # include build dir
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-set(CMAKE_VERBOSE_MAKEFILE 1) # verbose compiler output
+#set(CMAKE_VERBOSE_MAKEFILE 1) # verbose compiler output
 
 # set some project variables
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
@@ -72,6 +72,7 @@ set(asymreg_COMMON_HDRS
     eigen_addons.h
     eigen_iterator.h
     eigen_io.h
+    ode.h
     radonoperator.h
 )
 
@@ -147,4 +148,5 @@ file(GLOB DATA_FILES
     "${PROJECT_SOURCE_DIR}/data/*.csv"
     "${PROJECT_SOURCE_DIR}/data/*.json"
 )
+
 add_custom_target(${PROJECT_NAME}-dummy SOURCES ${DATA_FILES})
