@@ -386,9 +386,9 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int ite
         case Euler:
             ODE::euler(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
             break;
-        //case Midpoint:
-        //    ODE::rk2(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
-        //    break;
+        case Midpoint:
+            ODE::rk2(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+            break;
         //case RungeKutta:
         //    ODE::rk4(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
         //    break;
