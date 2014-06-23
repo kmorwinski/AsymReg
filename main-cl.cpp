@@ -8,6 +8,7 @@
 #include "plottersettings.h"
 
 #define DATA_FILE  "../data/recang-testdata-10x10.csv" // TODO: read from QSettings? or from argv?
+//#define DATA_FILE  "../data/data2-11x11.csv" // TODO: read from QSettings? or from argv?
 
 using ts = std::string; // ts (ToString) is much shorter
 
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
     sett.setTitle("Regularisierte Loesung Xdot", 1);
 
     Duration dt2;
-    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0, 0., &sett, &dt2);
+    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(AsymReg::Midpoint, 0, 0., nullptr /*&sett*/, &dt2);
     //std::cout << "Xdot =" << std::endl
     //          << Xdot << std::endl << std::endl;
 
