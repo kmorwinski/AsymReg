@@ -106,7 +106,10 @@ MainWindow::MainWindow()
       m_plotTime(QDateTime::currentDateTime()),
       m_dataSourceChanged(false)
 {
-    std::cout << "Eigen: using SIMD instructions "
+    std::cout << "Using Optimisations: "
+#ifdef _OPENMP
+              << "OpenMP, "
+#endif
               << Eigen::SimdInstructionSetsInUse() << std::endl;
 
     /* window properties: */

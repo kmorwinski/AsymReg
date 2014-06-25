@@ -100,11 +100,11 @@ DataSourceTableWidget::DataSourceTableWidget(QWidget *parent)
       m_editor(nullptr)
 {
     m_setZeroAction = new QAction(this);
-    m_setZeroAction->setText(tr("Set to 0.00"));
+    m_setZeroAction->setText(tr("Set to %L1").arg(0., 0, 'f', 2));
     m_setZeroAction->setData(QVariant::fromValue(0.));
 
     m_setOneAction = new QAction(this);
-    m_setOneAction->setText(tr("Set to 1.00"));
+    m_setOneAction->setText(tr("Set to %L1").arg(1., 0, 'f', 2));
     m_setOneAction->setData(QVariant::fromValue(1.));
 
     connect(m_setOneAction, SIGNAL(triggered()),
