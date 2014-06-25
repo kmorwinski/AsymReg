@@ -652,8 +652,6 @@ void MainWindow::loadDataSourceToTableWidget()
         }
     }
 
-    m_dataSourceTableWidget->resizeRowsToContents();
-    m_dataSourceTableWidget->resizeColumnsToContents();
     m_dataSourceTableWidget->blockSignals(false);
 }
 

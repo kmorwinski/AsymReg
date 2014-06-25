@@ -35,10 +35,13 @@ public:
 
 private slots:
     void editorCreated(QWidget *editor, const QModelIndex &index);
-    void commitPersistent(QWidget *editor);
+    void commitRequestFromEditor(QWidget *editor);
+    void closeRequestFromEditor(QWidget *editor);
     void setSimpleActionsValue();
 
 private:
+    void closeMultipleEditors(bool commitDataToModel);
+
     QAction *m_selectAllAction;
     QAction *m_selectNoneAction;
     QAction *m_setOneAction;

@@ -1,6 +1,7 @@
 #include "datasourcetablewidget.h"
 
 #include <QtGui/QAction>
+#include <QtGui/QHeaderView>
 #include <QtGui/QLineEdit>
 #include <QtGui/QStyledItemDelegate>
 
@@ -21,8 +22,8 @@ public:
            we restrict its input to allow only doubles from -9.99 to 9.99 */
         QLineEdit *le = qobject_cast<QLineEdit *>(editor);
         if (le != nullptr) {
-            QDoubleValidator *val = new QDoubleValidator( 9.99, // max value
-                                                         -9.99, // min value
+            QDoubleValidator *val = new QDoubleValidator(-9.99, // min value
+                                                          9.99, // max value
                                                          2,     // decimals
                                                          editor); // editor is parent so it will get deleted
             le->setValidator(val);
@@ -84,7 +85,9 @@ void DataSourceTableWidgetItem::setData(int role, const QVariant &value)
 
     /* set displayable string: (width is always 5, precision is always 2) */
     QTableWidgetItem::setData(Qt::DisplayRole,
-                              QString("%L1").arg(m_data, 5, 'f', 2));
+                              QString("%L1 ").arg(m_data, 5, 'f', 2)); // add ' ' after "L1" for
+                                                                       // consistent spacing of pos.
+                                                                       // and neg. numbers
 
     /* set background color: (green if user has edited) */
     QTableWidgetItem::setData(Qt::BackgroundRole,
@@ -99,6 +102,7 @@ DataSourceTableWidget::DataSourceTableWidget(QWidget *parent)
     : QTableWidget(parent),
       m_editor(nullptr)
 {
+    /* prepare actions for right-click context menu: */
     m_setZeroAction = new QAction(this);
     m_setZeroAction->setText(tr("Set to %L1").arg(0., 0, 'f', 2));
     m_setZeroAction->setData(QVariant::fromValue(0.));
@@ -126,38 +130,92 @@ DataSourceTableWidget::DataSourceTableWidget(QWidget *parent)
     QAction *sep = new QAction(this);
     sep->setSeparator(true);
 
+    /* add actions to this to show up in right-click context menu: */
     addAction(m_setZeroAction);
     addAction(m_setOneAction);
     addAction(sep);
     addAction(m_selectAllAction);
     addAction(m_selectNoneAction);
 
-    setContextMenuPolicy(Qt::ActionsContextMenu);
-    setItemDelegate(new DataSourceItemDelegate);
-    setItemPrototype(new DataSourceTableWidgetItem);
+    /* change some class properties: */
+    setContextMenuPolicy(Qt::ActionsContextMenu);    // activate right-click context menu
+    setItemDelegate(new DataSourceItemDelegate);     // set our item delegte class
+    setItemPrototype(new DataSourceTableWidgetItem); // set our item type as prototype
 
+    /* connect signals for multiple item editing: */
     connect(itemDelegate(), SIGNAL(editorCreated(QWidget*,QModelIndex)),
             this, SLOT(editorCreated(QWidget*,QModelIndex)));
     connect(itemDelegate(), SIGNAL(commitData(QWidget*)),
-            this, SLOT(commitPersistent(QWidget*)));
+            this, SLOT(commitRequestFromEditor(QWidget*)));
+    connect(itemDelegate(), SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)),
+            this, SLOT(closeRequestFromEditor(QWidget*)));
+
+    /* auto resize table to (minimal) field size: */
+    horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+    verticalHeader()->setResizeMode(QHeaderView::ResizeToContents);
 }
 
-void DataSourceTableWidget::commitPersistent(QWidget *editor)
+/**
+ * Close all Editor-Widgets which have been added to m_persistentEditor beforehand.
+ * @note All items in m_persistentEditor will be deleted and list will be empty
+ *       afterwards.
+ * @param commitDataToModel @c true if editor's content should be committed to model,
+ *                          @c false if not.
+ */
+void DataSourceTableWidget::closeMultipleEditors(bool commitDataToModel)
 {
-    /* case: persistent editors for multi-selection of items: */
-    if (editor != m_editor)
-        return; // we do nothing in this case but leave
-
-    /* case: first editor openend on multi-selection of items: */
     QList<QPointer<QWidget> >::const_iterator it = m_persistentEditor.constBegin();
     while (it != m_persistentEditor.constEnd()) {
-        commitData(*it);      // commit data of persistent editor to model
+        if (commitDataToModel)
+            commitData(*it);  // commit data of persistent editor to model
         //delete *it;         // this will automatically close editor
         (*it)->deleteLater(); // !!! use deleteLater instead of delete !!!
         it++;                 //   program crashes when user clicks on one of these pers. editors
     }
 
     m_persistentEditor.clear(); // empty list (items will be deleted on entering event-loop)
+}
+
+/**
+ * This slot is called when @a editor is about to close.
+ * If editing is aborted by user, we close all openend
+ * persistent editors by calling closeMultipleEditors with
+ * @c false as param.
+ * If editing was ended succesfully, then the other slot
+ * commitRequestFromEditor is called earlier.
+ * @param editor Editor-widget which is about to be closed.
+ * @see commitRequestFromEditor()
+ */
+void DataSourceTableWidget::closeRequestFromEditor(QWidget *editor)//, QAbstractItemDelegate::EndEditHint hint)
+{
+    /* case: persistent editors for multi-selection of items: */
+    if (editor != m_editor)
+        return; // we do nothing in this case but leave
+
+    /* case: first editor openend on multi-selection of items: */
+    closeMultipleEditors(false); // close all persistent editors, but revert to old data
+}
+
+/**
+ * This slot is called when editing was succesfully ended and @a editor
+ * is about to commit its data to our model.
+ * If @a editor is one of m_persistentEditor, we do nothing.
+ * If @a editor was the original one (@see editorCreated()), we then commit
+ * and close all open persistent editors from m_persistentEditor.
+ * @note This slot will not be called if user aborts editing.
+ *       Closing and reverting (in this case "not committing") will
+ *       be handled by closeRequestFromEditor().
+ * @param editor Editor-widget which is about to commit its data to model.
+ * @see closeRequestFromEditor()
+ */
+void DataSourceTableWidget::commitRequestFromEditor(QWidget *editor)
+{
+    /* case: persistent editors for multi-selection of items: */
+    if (editor != m_editor)
+        return; // we do nothing in this case but leave
+
+    /* case: first editor openend on multi-selection of items: */
+    closeMultipleEditors(true); // close all persistent editors and save new data
 }
 
 void DataSourceTableWidget::editorCreated(QWidget *editor, const QModelIndex &index)
