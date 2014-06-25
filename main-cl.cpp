@@ -30,6 +30,11 @@ int main(int argc, char **argv)
     print_begin();
     print_line("Asymptotical Regularization in Computer Tomographie");
     print_line("Example: Schlieren Imaging");
+    print_line_begin("Optimisation:");
+#ifdef _OPENMP
+    print("OpenMP,");
+#endif
+    print_line_end(Eigen::SimdInstructionSetsInUse());
     print_end();
 /* -------------------------------------------------------------------- */
     print_begin();
@@ -88,6 +93,12 @@ int main(int argc, char **argv)
     Plotter::closeAllRemainingPlotter();
 
     return 0;
+}
+
+void print(const std::string &text)
+{
+    if (!text.empty())
+        std::cout << " " << text;
 }
 
 void print_begin()

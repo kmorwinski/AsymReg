@@ -106,6 +106,9 @@ MainWindow::MainWindow()
       m_plotTime(QDateTime::currentDateTime()),
       m_dataSourceChanged(false)
 {
+    std::cout << "Eigen: using SIMD instructions "
+              << Eigen::SimdInstructionSetsInUse() << std::endl;
+
     /* window properties: */
     setWindowTitle(tr("Main[*] - %1").arg(qApp->applicationName()));
 
