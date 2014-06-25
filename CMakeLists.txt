@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(asymreg_BIN "${PROJECT_NAME}-schlieren")
 set(asymreg_cl_BIN "${asymreg_BIN}-cl")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" asymreg_BUILD_TYPE)
-set(asymreg_OPTI "-O3") #uncomment to overwrite CMAKE_BUILD_TYPE's default compiler optimisation level
+set(asymreg_OPTI "-O3 -msse3 -mssse3") #uncomment to overwrite CMAKE_BUILD_TYPE's default compiler optimisation level
 
 # Compiler Flags
 include(CheckBuildType)
