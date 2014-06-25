@@ -27,7 +27,6 @@
 #include <QtGui/QScrollArea>
 #include <QtGui/QToolBar>
 #include <QtGui/QToolTip>
-#include <QtGui/QTableWidget>
 #include <QtGui/QVBoxLayout>
 
 #include <qjson/qobjecthelper.h>
@@ -41,6 +40,7 @@
 
 #include "asymreg.h"
 #include "constants.h"
+#include "datasourcetablewidget.h"
 #include "duration.h"
 #include "plotter.h"
 #include "plottersettings.h"
@@ -215,7 +215,7 @@ MainWindow::MainWindow()
     runConfigGroupBox->setLayout(runConfigLayout);
 
     /* data source table widget: */
-    m_dataSourceTableWidget = new QTableWidget;
+    m_dataSourceTableWidget = new DataSourceTableWidget;
     m_dataSourceTableWidget->setRowCount(ASYMREG_DATSRC_SIZE);
     m_dataSourceTableWidget->setColumnCount(ASYMREG_DATSRC_SIZE);
     connect(m_dataSourceTableWidget, SIGNAL(itemChanged(QTableWidgetItem*)),
@@ -591,28 +591,19 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::dataSourceChanged(QTableWidgetItem *item)
 {
-    m_dataSourceTableWidget->blockSignals(true); // do not trigger 'itemChanged'-Signal
+    QVariant var = item->data(DataSourceTableWidgetItem::DataRole);
+    Q_ASSERT(var.canConvert(QVariant::Double)); // DataSourceTableWidgetItem should take care of this,
+                                                // so this is only for debugging the logic behind it
 
-    bool ok;
-    double d = item->data(Qt::DisplayRole).toString().toDouble(&ok);
+    /* set new (by user entered) value to zMat: */
     int col = m_dataSourceTableWidget->column(item);
     int row = m_dataSourceTableWidget->row(item);
+    zMat(row, col) = var.toDouble();
 
-    /* does item have a valid double value? */
-    if (!ok) {
-        /* no -> restore old value in item: */
-        QString v = QString("%L1").arg(zMat.coeff(row,col), 0, 'f');
-        item->setData(Qt::DisplayRole, v);
-    } else {
-        /* yes -> set new value in zMat & mark as unsaved: */
-        zMat(row, col) = d;
-        item->setData(Qt::BackgroundRole, Qt::green);                 // mark item with green color
-        m_dataSourceChanged = true;                                   // make sure we know what has changed
-        m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);      // enable saving of data
-        setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
-    }
-
-    m_dataSourceTableWidget->blockSignals(false); // enable signal/slot mechanism again
+    /* decorate window's title bar to show modification: */
+    m_dataSourceChanged = true;                                   // make sure we know what has changed
+    m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);      // enable saving of data
+    setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
 }
 
 void MainWindow::discardDataSource()
@@ -640,17 +631,17 @@ void MainWindow::loadDataSourceToTableWidget()
     for (int r = 0; r < zMat.rows(); ++r) {
         for (int c = 0; c < zMat.cols(); ++c) {
             QTableWidgetItem *item = m_dataSourceTableWidget->item(r, c);
-            bool needNew = (item == nullptr);
-            if (needNew)
-                item = new QTableWidgetItem;
-            QString v = QString("%L1").arg(zMat.coeff(r,c), 0, 'f'); // coeff() method is always const Scalar& (...) const
-            item->setData(Qt::DisplayRole, v);
-            item->setData(Qt::BackgroundRole, QVariant()); // remove green color
-            if (needNew)
+            if (item == nullptr) {
+                item = m_dataSourceTableWidget->itemPrototype()->clone();
                 m_dataSourceTableWidget->setItem(r, c, item);
+            }
+
+            item->setData(DataSourceTableWidgetItem::DataRole, zMat.coeff(r,c));
         }
     }
 
+    m_dataSourceTableWidget->resizeRowsToContents();
+    m_dataSourceTableWidget->resizeColumnsToContents();
     m_dataSourceTableWidget->blockSignals(false);
 }
 

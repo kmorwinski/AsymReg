@@ -7,6 +7,7 @@
 #include <QtCore/QPointer>
 #include <QtCore/QStack>
 
+class DataSourceTableWidget;
 class PlotterSettings;
 class QActionGroup;
 class QComboBox;
@@ -14,7 +15,6 @@ class QDoubleSpinBox;
 class QFileSystemWatcher;
 class QPushButton;
 class QSpinBox;
-class QTableWidget;
 class QTableWidgetItem;
 class SvgViewer;
 
@@ -88,10 +88,10 @@ private:
     bool m_plotConfigChaned;
 
     // members for data source handling:
+    DataSourceTableWidget *m_dataSourceTableWidget;
     QActionGroup *m_dataSourceSelectGroup;
     QPushButton *m_dataSourceSelectButton;
     QPushButton *m_dataSourceSaveButton;
-    QTableWidget *m_dataSourceTableWidget;
     bool m_dataSourceChanged;
 
     // members for viewing plots:

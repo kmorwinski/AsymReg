@@ -83,6 +83,7 @@ set(asymreg_COMMON_HDRS
 )
 
 set(asymreg_GUI_SRCS
+    datasourcetablewidget.cpp
     mainwindow.cpp
     plottersettingsdialog.cpp
     svgviewer.cpp
