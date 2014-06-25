@@ -54,12 +54,12 @@ void rk4(const int angles, const EigenBase<Derived> &X, const Derived *dXdt,
 
     #pragma omp parallel for
     for (int i = 0; i < angles; ++i) {
-        K1 = .5 * h * dXdt[i];
-        derivs(i,          K1 + X.derived(), K2);
+        K1 = dXdt[i];
+        derivs(i, .5 * h * K1 + X.derived(), K2);
         derivs(i, .5 * h * K2 + X.derived(), K3);
         derivs(i,      h * K3 + X.derived(), K4);
 
-        Xout.derived() += (1./6.*(K1 + h*K4) + 1./3.*(K2 + K3)) / Scalar(angles);
+        Xout.derived() += (h/6.*(K1 + K4) + h/3.*(K2 + K3)) / Scalar(angles);
     }
 }
 
