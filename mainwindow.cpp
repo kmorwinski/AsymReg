@@ -438,18 +438,23 @@ int MainWindow::askToSaveDataSource(const QString &fileName)
     QFileInfo fileInfo(fileName);
     // prepare questions and information:
     QString title = tr("Close Main - %1").arg(qApp->applicationName());
-    QString text = tr("The data source \"%1\" has been modified.").arg(fileInfo.fileName());
-    QString infoText = tr("Do you want to save your changes or discard them?");
+    QString text = fileName.isEmpty() ? tr("The data source has not been saved.")
+                                      : tr("The data source \"%1\" has been modified.")
+                                        .arg(fileInfo.fileName());
+    QString infoText = fileName.isEmpty() ? tr("Please select a filename or discard your data.")
+                                          : tr("Do you want to save or discard your changes?");
 
     // construct dialog:
     QMessageBox msgBox(this);
     msgBox.setWindowTitle(title);
     msgBox.setText(text);
     msgBox.setInformativeText(infoText);
-    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard |
-                              QMessageBox::Cancel);
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Save);
-    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setIcon(fileName.isEmpty() ? QMessageBox::Question : QMessageBox::Warning);
+    if (fileName.isEmpty())
+        msgBox.button(QMessageBox::Save)->setText(tr("&Save As")); // change default text to "Save As"
+                                                                   // as we need a new file
 
     // show dialog and evaluate answer:
     auto ret = msgBox.exec();
@@ -555,7 +560,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (isWindowModified()) {
         if (m_dataSourceChanged) {
             QAction *dataSource = m_dataSourceSelectGroup->checkedAction();
-            int answer = askToSaveDataSource(dataSource->data().toString());
+            int answer = askToSaveDataSource((dataSource != nullptr) ? dataSource->data().toString()
+                                                                     : QString());
             if (answer == QMessageBox::Cancel) {
                 event->ignore();
                 return;
@@ -783,9 +789,14 @@ void MainWindow::runAsymReg()
 
 void MainWindow::saveDataSource()
 {
-    QFileInfo fileInfo(m_dataSourceSelectGroup->checkedAction()->data().toString());
-    if (fileInfo.exists())
-        saveDataSource(fileInfo.canonicalFilePath());
+    QAction *act = m_dataSourceSelectGroup->checkedAction();
+    if (act == nullptr) {
+        askToSaveDataSource();
+        return;
+    }
+
+    QFileInfo fileInfo(act->data().toString());
+    saveDataSource(fileInfo.canonicalFilePath());
 }
 
 void MainWindow::saveDataSource(const QString &fileName, bool reload)

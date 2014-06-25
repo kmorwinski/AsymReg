@@ -57,7 +57,7 @@ private:
 
     // private functions for data source handling:
     QAction *addDataSourceAction(const QString &fileName, bool checked = true);
-    int askToSaveDataSource(const QString &fileName);
+    int askToSaveDataSource(const QString &fileName = QString());
     void discardDataSource();
     void loadDataSourceToTableWidget();
     void saveDataSource(const QString &fileName, bool reload = true);
