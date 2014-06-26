@@ -85,9 +85,7 @@ void DataSourceTableWidgetItem::setData(int role, const QVariant &value)
 
     /* set displayable string: (width is always 5, precision is always 2) */
     QTableWidgetItem::setData(Qt::DisplayRole,
-                              QString("%L1 ").arg(m_data, 5, 'f', 2)); // add ' ' after "L1" for
-                                                                       // consistent spacing of pos.
-                                                                       // and neg. numbers
+                              QString("%L1").arg(m_data, 5, 'f', 2));
 
     /* set background color: (green if user has edited) */
     QTableWidgetItem::setData(Qt::BackgroundRole,
@@ -150,9 +148,23 @@ DataSourceTableWidget::DataSourceTableWidget(QWidget *parent)
     connect(itemDelegate(), SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)),
             this, SLOT(closeRequestFromEditor(QWidget*)));
 
-    /* auto resize table to (minimal) field size: */
-    horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
-    verticalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+    /* set displaying font to system's monospaced style: */
+    QFont f = font();
+    f.setFamily("Monospace");         // Linux (X11)
+    f.setStyleHint(QFont::Monospace); // Windows & Mac
+    setFont(f);
+
+    /* determine minimal field size needed...: */
+    QFontMetrics fm = fontMetrics();
+    QRect rect = fm.boundingRect("-1.00");
+    int wd = rect.width() + fm.width(' ') + 1; // added space is needed for neg. numbers
+    int hg = rect.height() + 3;                // +3 for a little extra
+
+    /* ... and set as fixed size: */
+    horizontalHeader()->setDefaultSectionSize(wd);
+    horizontalHeader()->setResizeMode(QHeaderView::Fixed);
+    verticalHeader()->setDefaultSectionSize(hg);
+    verticalHeader()->setResizeMode(QHeaderView::Fixed);
 }
 
 /**
