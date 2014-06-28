@@ -23,7 +23,8 @@
 using hrc = std::chrono::high_resolution_clock;
 
 // local/private functions:
-static void squareBound(double, double *, double *);
+static void circleBound(double in, double *lower, double *upper);
+static void squareBound(double in, double *lower, double *upper);
 
 // template classes:
 /**
@@ -148,7 +149,8 @@ public:
         SrcFuncAccOp sfao(&interp);
 
         RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
-                Radon(sfao, squareBound, m_Sigma.col(n));
+                Radon(sfao, circleBound, m_Sigma.col(n));
+                //Radon(sfao, squareBound, m_Sigma.col(n));
 
         Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
         for (int j = 0; j < m_S.cols(); ++j)
@@ -208,6 +210,13 @@ RowVectorXd AsymReg::m_DataSet[AR_NUM_REC_ANGL];
 Matrix<double, Dynamic, Dynamic> AsymReg::m_Result;
 
 // function implementations:
+void circleBound(double in, double *lower, double *upper)
+{
+    double val = sqrt(1 - in*in);
+    *lower = -val;
+    *upper =  val;
+}
+
 /**
  * @brief Returns [-1,1] as integration boundaries for Radon-Transform.
  * @param in (unused)
@@ -290,7 +299,8 @@ void AsymReg::generateDataSet(Duration *time)
          */
         SrcFuncAccOp sfao(sourceFunction());
         RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
-                Radon(sfao, squareBound, Sigma.col(n));
+                Radon(sfao, circleBound, Sigma.col(n));
+                //Radon(sfao, squareBound, Sigma.col(n));
 
         /* iterate over all entries in vector S: */
         for (Index j = 0; j < numSamples; ++j)
