@@ -618,6 +618,23 @@ void MainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
+QMenu *MainWindow::createPopupMenu()
+{
+    QMenu *menu = QMainWindow::createPopupMenu();
+    QList<QAction *> actions = menu->actions();
+    if (actions.isEmpty())
+        return menu;
+
+    QList<QAction *>::iterator it = actions.begin();
+    while (it != actions.end()) {
+        if ((*it)->text() == tr("Toolbar"))
+            (*it)->setDisabled(true);
+        it++;
+    }
+
+    return menu;
+}
+
 void MainWindow::dataSourceChanged(QTableWidgetItem *item)
 {
     QVariant var = item->data(DataSourceTableWidgetItem::DataRole);

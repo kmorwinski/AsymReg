@@ -27,6 +27,8 @@ public:
     MainWindow();
     virtual ~MainWindow();
 
+    QMenu *createPopupMenu() override;
+
 protected:
     virtual void closeEvent(QCloseEvent *event);
 
