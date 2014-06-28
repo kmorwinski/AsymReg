@@ -16,6 +16,7 @@ class QFileSystemWatcher;
 class QPushButton;
 class QSpinBox;
 class QTableWidgetItem;
+class QToolButton;
 class SvgViewer;
 
 class MainWindow : public QMainWindow
@@ -95,11 +96,13 @@ private:
     bool m_dataSourceChanged;
 
     // members for viewing plots:
-    QAction *m_autoPlotAction;
+    QAction *m_autoPlotDataSrcAction;
+    QAction *m_autoPlotDataRegAction;
     QAction *m_closeAllPlotsAction;
-    QList<QPointer<SvgViewer> > m_svgViewerList;
     QDateTime m_plotTime;
     QFileSystemWatcher *m_plotWatcher;
+    QList<QPointer<SvgViewer> > m_svgViewerList;
+    QToolButton *m_autoPlotToolButton;
 
     // other:
     QAction *m_autoRunAction;

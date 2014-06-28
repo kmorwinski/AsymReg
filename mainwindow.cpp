@@ -26,6 +26,7 @@
 #include <QtGui/QStatusBar>
 #include <QtGui/QScrollArea>
 #include <QtGui/QToolBar>
+#include <QtGui/QToolButton>
 #include <QtGui/QToolTip>
 #include <QtGui/QVBoxLayout>
 
@@ -123,13 +124,28 @@ MainWindow::MainWindow()
     connect(quitAction, SIGNAL(triggered()),
             this, SLOT(close()));
 
-    m_autoPlotAction = new QAction(this);
-    m_autoPlotAction->setText(tr("Auto Plot"));
-    //m_autoPlotAction->setToolTip();
-    m_autoPlotAction->setIcon(KIconUtils::addOverlay(QIcon::fromTheme("image-x-generic"),
-                                                     QIcon::fromTheme("media-seek-forward"),
-                                                     Qt::BottomLeftCorner));
-    m_autoPlotAction->setCheckable(true); // state will be set in readSettings(), default "true"
+    m_autoPlotDataSrcAction = new QAction(this);
+    m_autoPlotDataSrcAction->setText(tr("Source Data"));
+    m_autoPlotDataSrcAction->setToolTip(tr("Plot data source whenever it is generated."));
+    m_autoPlotDataSrcAction->setCheckable(true); // state will be set in readSettings(), default "true"
+
+    m_autoPlotDataRegAction = new QAction(this);
+    m_autoPlotDataRegAction->setText(tr("Regularized Data"));
+    m_autoPlotDataRegAction->setToolTip(tr("Plot result after regularization has finished."));
+    m_autoPlotDataRegAction->setCheckable(true); // state will be set in readSettings(), default "true"
+
+    Menu *autoPlotMenu = new Menu;
+    autoPlotMenu->addAction(m_autoPlotDataSrcAction);
+    autoPlotMenu->addAction(m_autoPlotDataRegAction);
+
+    m_autoPlotToolButton = new QToolButton;
+    m_autoPlotToolButton->setText(tr("Auto Plot"));
+    m_autoPlotToolButton->setIcon(KIconUtils::addOverlay(QIcon::fromTheme("image-x-generic"),
+                                                         QIcon::fromTheme("media-seek-forward"),
+                                                         Qt::BottomLeftCorner));
+    m_autoPlotToolButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon); // button does not honor toolbar's settings
+    m_autoPlotToolButton->setCheckable(true); // state will be set in readSettings(), default "true"
+    m_autoPlotToolButton->setMenu(autoPlotMenu);
 
     m_closeAllPlotsAction = new QAction(this);
     m_closeAllPlotsAction->setText(tr("Close All Plots"));
@@ -149,14 +165,15 @@ MainWindow::MainWindow()
 
     QToolBar *toolBar = new QToolBar;
     toolBar->addAction(quitAction);
-    toolBar->addAction(m_autoPlotAction);
+    QAction *autoPlotAction = toolBar->addWidget(m_autoPlotToolButton);
     toolBar->addAction(m_closeAllPlotsAction);
     toolBar->addAction(m_autoRunAction);
     toolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolBar->insertSeparator(m_autoPlotAction); // separator between quit and autoplot
-    toolBar->insertSeparator(m_autoRunAction);  // separator between close-all-plots and autorun
+    toolBar->insertSeparator(autoPlotAction);  // separator between quit and autoplot
+    toolBar->insertSeparator(m_autoRunAction); // separator between close-all-plots and autorun
     toolBar->setMovable(false);
     toolBar->setObjectName("mainToolBar"); // shutdown warning from QSettings
+    toolBar->setWindowTitle(tr("Toolbar")); // name shown in popup menu
     addToolBar(Qt::TopToolBarArea, toolBar);
 
     /* info label: */
@@ -705,7 +722,9 @@ void MainWindow::readSettings()
             restoreState(settings.value("windowState").toByteArray());
         settings.endGroup(); // "Window"
         settings.beginGroup("Toolbar");
-            m_autoPlotAction->setChecked(settings.value("autoPlot", true).toBool());
+            m_autoPlotToolButton->setChecked(settings.value("autoPlot", true).toBool());
+            m_autoPlotDataSrcAction->setChecked(settings.value("autoPlotDataSrc", true).toBool());
+            m_autoPlotDataRegAction->setChecked(settings.value("autoPlotDataReg", true).toBool());
             m_autoRunAction->setChecked(settings.value("autoRun", false).toBool());
         settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
@@ -740,10 +759,10 @@ void MainWindow::readSettings()
 
 void MainWindow::runAsymReg()
 {
-    bool autoPlot = m_autoPlotAction->isChecked();
+    bool autoPlot = m_autoPlotToolButton->isChecked();
 
     AsymReg::createSourceFunction(zMat);
-    if (autoPlot)
+    if (autoPlot && m_autoPlotDataSrcAction->isChecked())
         plotDataSource();
 
     AsymReg::generateDataSet();
@@ -763,7 +782,7 @@ void MainWindow::runAsymReg()
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Regularization Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
-    if (autoPlot) {
+    if (autoPlot && m_autoPlotDataRegAction->isChecked()) {
         QString t2, t3, t4;
         t2 = "regularized";
         t3 = "[" + m_runSolverSelectComboBox->currentText() + ": "
@@ -845,7 +864,9 @@ void MainWindow::saveSettings() const
             settings.setValue("windowState", saveState());
         settings.endGroup(); // "Window"
         settings.beginGroup("Toolbar");
-            settings.setValue("autoPlot", m_autoPlotAction->isChecked());
+            settings.setValue("autoPlot", m_autoPlotToolButton->isChecked());
+            settings.setValue("autoPlotDataSrc", m_autoPlotDataSrcAction->isChecked());
+            settings.setValue("autoPlotDataReg", m_autoPlotDataRegAction->isChecked());
             settings.setValue("autoRun", m_autoRunAction->isChecked());
         settings.endGroup(); // "Toolbar"
         settings.beginGroup("DataSource");
