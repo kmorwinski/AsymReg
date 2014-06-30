@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     print_line("Generating Schlieren Data Sets...");
 
     Duration dt;
-    AsymReg::generateDataSet(&dt);
+    AsymReg::generateDataSet(0, &dt);
 
     print_line_begin("...done (time used: ");
     std::cout << dt.value() << dt.unit() << ").";
@@ -75,7 +75,9 @@ int main(int argc, char **argv)
     sett.setTitle("Regularisierte Loesung Xdot", 1);
 
     Duration dt2;
-    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(AsymReg::Midpoint, 0, 0., nullptr /*&sett*/, &dt2);
+    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0,
+                                                                 AsymReg::Midpoint, 0, 0.,
+                                                                 nullptr /*&sett*/, &dt2);
     //std::cout << "Xdot =" << std::endl
     //          << Xdot << std::endl << std::endl;
 

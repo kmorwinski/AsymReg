@@ -237,9 +237,11 @@ void AsymReg::createSourceFunction(const MatrixXd &srcDat)
     AsymReg::setSourceFunction(func);
 }
 
-void AsymReg::generateDataSet(Duration *time)
+void AsymReg::generateDataSet(int recordingAngles, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
+
+    const int angles = (recordingAngles > 0) ? recordingAngles : N;
 
     /* Phi:
      * ====
@@ -248,12 +250,13 @@ void AsymReg::generateDataSet(Duration *time)
      * We could use intervall [0,pi) but we will then never get the exact 90°
      * angle which means data sampling in direction of light-rays/xray.
      */
-    static_assert(N % 2 == 0, "only even numbers of N are allowed"); // we want that 90° degree angle
-    ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
+    assert(angles % 2 == 0); // only even numbers of angles are allowed, we want that 90° angle
+    ArrayXd Phi = ArrayXd::LinSpaced(Sequential, angles+1, 0., M_PI).head(angles); // head(N) => take only first N entries
 
     /* printing list of rec. angles to stdout: */
-    std::cout << "Using the following " << N << " recording angels:" << std::endl
-              << (Phi*PHI/M_PI).format(IOFormat(2, 0, "", "°, ", "", "", "", "°")) // comma-separated & '°' after number
+    std::cout << "Using the following " << angles << " recording angels:" << std::endl
+              << (Phi*PHI/M_PI).format(IOFormat(2, 0, "", "°, ", "", "", "", "°")) // comma-separated list
+                                                                                   // and '°' after each number
               << std::endl << std::endl;
 
     auto t1 = hrc::now(); // Start timing (TODO: start before Phi, but exlude cout)
@@ -262,7 +265,7 @@ void AsymReg::generateDataSet(Duration *time)
      * Recording angles Phi in euclidian coord. system.
      * Each column in Sigma represents one recording angle as target coords.
      */
-    MatrixXd Sigma(2, N);
+    MatrixXd Sigma(2, angles);
     Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
     Sigma.row(1) = Phi.sin(); // [sin(phi_0), sin(phi_1), ... , sin(phi_n)]
 
@@ -284,7 +287,7 @@ void AsymReg::generateDataSet(Duration *time)
     //std::cout << "S =" << std::endl << S << std::endl << std::endl;
 
     /* iterate over all rec. angles: */
-    for (Index n = 0; n < N; ++n) {
+    for (Index n = 0; n < angles; ++n) {
         //std::cout << std::endl << "phi_" << n << " = " << (Phi(n)*PHI/M_PI) << std::endl;
 
         Array<double, 1, numSamples> Integral; // temporary vector for integrated data
@@ -314,7 +317,7 @@ void AsymReg::generateDataSet(Duration *time)
 
     /* printing generated data y_n to stdout: */
     std::cout << "Resulting in the following undisturbed (delta = 0) data:" << std::endl;
-    for (Index n = 0; n < N; ++n) {
+    for (Index n = 0; n < angles; ++n) {
         std::cout << "y_" << n << "(s) =" << std::endl
                   << m_DataSet[n] << std::endl
                   << std::endl;
@@ -326,14 +329,17 @@ void AsymReg::generateDataSet(Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int iterations, double step, const PlotterSettings *pl, Duration *time)
+Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
+                                                      ODE_Solver solver, int iterations, double step,
+                                                      const PlotterSettings *pl, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
 
     m_Result.setZero();
 
-    double h = (step > 0.) ? step : H;
+    const double h      = (step > 0.)           ? step            : H;
+    const int    angles = (recordingAngles > 0) ? recordingAngles : N;
 
     /* prepare plotter settings: */
     ContourPlotterSettings *sett = nullptr;
@@ -367,8 +373,8 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int ite
     Matrix<double, 1, Dynamic> Xsi = Matrix<double, 1, Dynamic>::LinSpaced(
                 Sequential, ASYMREG_GRID_SIZE, 0., 10.);
 
-    ArrayXd Phi = ArrayXd::LinSpaced(Sequential, N+1, 0., M_PI).head(N); // head(N) => take only first N entries
-    MatrixXd Sigma(2, N);
+    ArrayXd Phi = ArrayXd::LinSpaced(Sequential, angles+1, 0., M_PI).head(angles); // head(N) => take only first N entries
+    MatrixXd Sigma(2, angles);
     Sigma.row(0) = Phi.cos(); // [cos(phi_0), cos(phi_1), ... , cos(phi_n)]
     Sigma.row(1) = Phi.sin(); // [sin(phi_0), sin(phi_1), ... , sin(phi_n)]
 
@@ -383,9 +389,9 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int ite
         std::cout << itrStr << std::endl;
 
         DerivateOperator<MatrixXd, RowVectorXd, MatrixXd> derivs(Sigma, S, Xsi, &m_DataSet[0]);
-        Matrix<double , Dynamic, Dynamic> dXdt[N];
+        Matrix<double , Dynamic, Dynamic> dXdt[angles];
 
-        for (int n = 0; n < Sigma.cols(); ++n) {
+        for (int n = 0; n < angles; ++n) {
             dXdt[n].resizeLike(Xn);
 
             derivs(n, Xn, dXdt[n]);
@@ -394,13 +400,13 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(ODE_Solver solver, int ite
 
         switch (solver) {
         case Euler:
-            ODE::euler(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+            ODE::euler(angles, Xn, &dXdt[0], h, Xdot, derivs);
             break;
         case Midpoint:
-            ODE::rk2(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+            ODE::rk2(angles, Xn, &dXdt[0], h, Xdot, derivs);
             break;
         case RungeKutta:
-            ODE::rk4(Sigma.cols(), Xn, &dXdt[0], h, Xdot, derivs);
+            ODE::rk4(angles, Xn, &dXdt[0], h, Xdot, derivs);
             break;
         }
 

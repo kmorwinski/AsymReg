@@ -782,14 +782,15 @@ void MainWindow::runAsymReg()
     if (autoPlot && m_autoPlotDataSrcAction->isChecked())
         plotDataSource();
 
-    AsymReg::generateDataSet();
+    AsymReg::generateDataSet(0);
 
     AsymReg::ODE_Solver solver = static_cast<AsymReg::ODE_Solver>(
                 m_runSolverSelectComboBox->itemData(m_runSolverSelectComboBox->currentIndex())
                 .value<unsigned int>());
     Duration dur;
     const Matrix<double, Dynamic, Dynamic> &X =
-            AsymReg::regularize(solver,
+            AsymReg::regularize(0,
+                                solver,
                                 m_runEulerIterationSpinBox->value(),
                                 m_runEulerStepSpinBox->value(),
                                 /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,

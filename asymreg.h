@@ -24,7 +24,8 @@ public:
 
     static void createSourceFunction(const MatrixXd &srcDat);
 
-    static void generateDataSet(Duration *time = nullptr);
+    static void generateDataSet(int recordingAngles,
+                                Duration *time = nullptr);
 
     enum ODE_Solver {
         Euler,
@@ -32,7 +33,8 @@ public:
         RungeKutta // RK4
     };
 
-    static Matrix<double, Dynamic, Dynamic> &regularize(ODE_Solver solver, int iterations, double step,
+    static Matrix<double, Dynamic, Dynamic> &regularize(int recordingAngles,
+                                                        ODE_Solver solver, int iterations, double step,
                                                         const PlotterSettings *pl, Duration *time = nullptr);
 
 private:
