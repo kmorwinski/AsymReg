@@ -349,8 +349,22 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
         sett->setTitle("regularized data", 2);
     }
 
-    std::cout << "Solving ODE with direct Euler method:" << std::endl
-              << "  -> step size h = " << H << std::endl
+    std::cout << "Solving ODE with ";
+
+    switch (solver) {
+    case Euler:
+        std::cout << "Euler (direct)";
+        break;
+    case Midpoint:
+        std::cout << "Midpoint (2nd order)";
+        break;
+    case RungeKutta:
+        std::cout << "Runge Kutta (4th order)";
+        break;
+    }
+
+    std::cout << " method:" << std::endl
+              << "  -> step size h = " << h << std::endl
               << "  -> initial value X0 = " << X0_C
               << " matrix of R^[" << ASYMREG_GRID_SIZE << "x" << ASYMREG_GRID_SIZE << "]"
               << std::endl;
