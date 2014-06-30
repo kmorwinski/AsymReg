@@ -192,19 +192,32 @@ MainWindow::MainWindow()
     QFormLayout *runConfigLayoutLeft = new QFormLayout;  // we use the whole space by using 2 layouts,...
     QFormLayout *runConfigLayoutRight = new QFormLayout; // ... one on the left & one on the right side
 
+    QFont runDescriptionFont = font();
+    runDescriptionFont.setItalic(true);
+    runDescriptionFont.setUnderline(true);
+
+    QLabel *systemLabel = new QLabel;
+    systemLabel->setText(tr("System Configuration"));
+    systemLabel->setFont(runDescriptionFont);
+    runConfigLayoutLeft->setWidget(0, QFormLayout::SpanningRole, systemLabel);
+
     m_runGridSizeSpinBox = new QSpinBox; // value is set in readSettings()
     m_runGridSizeSpinBox->setSingleStep(10);
     m_runGridSizeSpinBox->setMaximum(250);
     m_runGridSizeSpinBox->setDisabled(true); // has no function yet
-    runConfigLayoutLeft->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
+    runConfigLayoutRight->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
+
+    m_runRecAngSpinBox = new QSpinBox; // value is set in readSettings()
+    m_runRecAngSpinBox->setRange(2, N);
+    m_runRecAngSpinBox->setSingleStep(2); // only even numbers are allowed in AsymReg
+    runConfigLayoutLeft->addRow(tr("system recording angles"), m_runRecAngSpinBox);
 
     QLabel *odeLabel = new QLabel;
     odeLabel->setText(tr("ODE Solver Configuration"));
-    QFont odeFont = odeLabel->font();
-    odeFont.setItalic(true);
-    odeFont.setUnderline(true);
-    odeLabel->setFont(odeFont);
-    runConfigLayoutLeft->setWidget(1, QFormLayout::SpanningRole, odeLabel);
+    odeLabel->setFont(runDescriptionFont);
+    runConfigLayoutLeft->setWidget(2, QFormLayout::SpanningRole, odeLabel);
+
+    runConfigLayoutRight->addRow(QString(" "), new QWidget); // dummy
 
     m_runEulerStepSpinBox = new QDoubleSpinBox; // value is set in readSettings()
     m_runEulerStepSpinBox->setDecimals(3);
@@ -213,8 +226,6 @@ MainWindow::MainWindow()
     m_runEulerStepSpinBox->setAccelerated(true); // values will spin up/down fast
     m_runEulerStepSpinBox->setToolTip(tr("Parameter \"h\" used in Euler Solver."));
     runConfigLayoutLeft->addRow(tr("Step Size:"), m_runEulerStepSpinBox);
-
-    runConfigLayoutRight->addRow(QString(" "), new QWidget); // dummy
 
     m_runSolverSelectComboBox = new QComboBox;
     m_runSolverSelectComboBox->addItem(tr("Euler (direct)"),
@@ -782,14 +793,14 @@ void MainWindow::runAsymReg()
     if (autoPlot && m_autoPlotDataSrcAction->isChecked())
         plotDataSource();
 
-    AsymReg::generateDataSet(0);
+    AsymReg::generateDataSet(m_runRecAngSpinBox->value());
 
     AsymReg::ODE_Solver solver = static_cast<AsymReg::ODE_Solver>(
                 m_runSolverSelectComboBox->itemData(m_runSolverSelectComboBox->currentIndex())
                 .value<unsigned int>());
     Duration dur;
     const Matrix<double, Dynamic, Dynamic> &X =
-            AsymReg::regularize(0,
+            AsymReg::regularize(m_runRecAngSpinBox->value(),
                                 solver,
                                 m_runEulerIterationSpinBox->value(),
                                 m_runEulerStepSpinBox->value(),

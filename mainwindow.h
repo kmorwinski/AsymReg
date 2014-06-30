@@ -82,6 +82,7 @@ private:
     QPushButton *m_runAsymRegButton;
     QSpinBox *m_runEulerIterationSpinBox;
     QSpinBox *m_runGridSizeSpinBox;
+    QSpinBox *m_runRecAngSpinBox;
 
     // members for plotter configuration handling:
     PlotterSettings *m_pressureFunctionPlotSettings;
