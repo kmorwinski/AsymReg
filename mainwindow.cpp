@@ -48,7 +48,7 @@
 #include "plottersettingsdialog.h"
 #include "svgviewer.h"
 
-// some string we need to seach throughout different places:
+// some string we need to search for & compare throughout different places:
 #define MW_DATSRC_STR_CLEAR   "Clear List"
 #define MW_DATSRC_STR_EMPTY   "Empty"
 #define MW_DATSRC_STR_SELECT  "Select &New File"
@@ -70,6 +70,7 @@ static bool qaction_lessThan(QAction *ac1, QAction *ac2)
     return (ac1IsFile && !ac2IsFile);
 }
 
+// private classes:
 /**
  * Derived QMenu class to show QAction's tooltips.
  * Tooltips are normally not shown for QAction elements beeing part of a QMenu.
@@ -83,7 +84,7 @@ static bool qaction_lessThan(QAction *ac1, QAction *ac2)
 class Menu : public QMenu
 {
 public:
-    bool event(QEvent *ev)
+    bool event(QEvent *ev) override
     {
         Q_ASSERT(ev != nullptr);
         const QHelpEvent *helpEvent = static_cast<QHelpEvent *>(ev);
@@ -102,6 +103,7 @@ public:
     }
 };
 
+// class implementation:
 MainWindow::MainWindow()
     : m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
@@ -111,7 +113,7 @@ MainWindow::MainWindow()
 #ifdef _OPENMP
               << "OpenMP, "
 #endif
-              << Eigen::SimdInstructionSetsInUse() << std::endl;
+              << Eigen::SimdInstructionSetsInUse() << std::endl << std::endl;
 
     /* window properties: */
     setWindowTitle(tr("Main[*] - %1").arg(qApp->applicationName()));
@@ -119,6 +121,7 @@ MainWindow::MainWindow()
     /* toolbar: */
     QAction *quitAction = new QAction(this);
     quitAction->setText(tr("&Quit"));
+    quitAction->setToolTip(tr("Quit Application"));
     quitAction->setIcon(QIcon::fromTheme("application-exit"));
     quitAction->setShortcut(Qt::Key_Escape);
     connect(quitAction, SIGNAL(triggered()),
@@ -126,7 +129,8 @@ MainWindow::MainWindow()
 
     m_autoPlotDataSrcAction = new QAction(this);
     m_autoPlotDataSrcAction->setText(tr("Source Data"));
-    m_autoPlotDataSrcAction->setToolTip(tr("Plot data source whenever it is generated."));
+    m_autoPlotDataSrcAction->setToolTip(tr("Plot data source whenever it has changed."
+                                           "<br/>//TODO: implement \'change\' behaviour"));
     m_autoPlotDataSrcAction->setCheckable(true); // state will be set in readSettings(), default "true"
 
     m_autoPlotDataRegAction = new QAction(this);
@@ -134,12 +138,15 @@ MainWindow::MainWindow()
     m_autoPlotDataRegAction->setToolTip(tr("Plot result after regularization has finished."));
     m_autoPlotDataRegAction->setCheckable(true); // state will be set in readSettings(), default "true"
 
-    Menu *autoPlotMenu = new Menu;
+    Menu *autoPlotMenu = new Menu; // use our menu class here to show tooltips for menu entries
     autoPlotMenu->addAction(m_autoPlotDataSrcAction);
     autoPlotMenu->addAction(m_autoPlotDataRegAction);
 
     m_autoPlotToolButton = new QToolButton;
     m_autoPlotToolButton->setText(tr("Auto Plot"));
+    m_autoPlotToolButton->setToolTip(tr("Enable/Disable plotting of all occuring data."
+                                        "<br/><br/><i>Long press this button for a "
+                                        "finer selection which data should be plottet.</i>"));
     m_autoPlotToolButton->setIcon(KIconUtils::addOverlay(QIcon::fromTheme("image-x-generic"),
                                                          QIcon::fromTheme("media-seek-forward"),
                                                          Qt::BottomLeftCorner));
