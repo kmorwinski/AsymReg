@@ -208,9 +208,10 @@ MainWindow::MainWindow()
     systemLabel->setFont(runDescriptionFont);
     runConfigLayoutLeft->setWidget(0, QFormLayout::SpanningRole, systemLabel);
 
-    m_runGridSizeSpinBox = new QSpinBox; // value is set in readSettings()
+    m_runGridSizeSpinBox = new QSpinBox;
     m_runGridSizeSpinBox->setSingleStep(10);
     m_runGridSizeSpinBox->setMaximum(250);
+    m_runGridSizeSpinBox->setValue(ASYMREG_GRID_SIZE); // TODO: read value in readSettings()
     m_runGridSizeSpinBox->setDisabled(true); // has no function yet
     runConfigLayoutRight->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
 
@@ -778,7 +779,8 @@ void MainWindow::readSettings()
             settings.endArray();
         settings.endGroup(); // "DataSource"
         settings.beginGroup("AlgoRuntimeConfig");
-            m_runGridSizeSpinBox->setValue(settings.value("grid-size", ASYMREG_GRID_SIZE).toInt());
+            //m_runGridSizeSpinBox->setValue(settings.value("grid-size", ASYMREG_GRID_SIZE).toInt());
+            m_runRecAngSpinBox->setValue(settings.value("rec-angles", AR_NUM_REC_ANGL).toInt());
             m_runSolverSelectComboBox->setCurrentIndex(settings.value("solver", 0).toInt());
             m_runEulerStepSpinBox->setValue(settings.value("euler-step", H).toDouble());
             m_runEulerIterationSpinBox->setValue(settings.value("euler-iter", T).toInt());
@@ -921,7 +923,8 @@ void MainWindow::saveSettings() const
             settings.endArray();
         settings.endGroup(); // "DataSource"
         settings.beginGroup("AlgoRuntimeConfig");
-            settings.setValue("grid-size", m_runGridSizeSpinBox->value());
+            //settings.setValue("grid-size", m_runGridSizeSpinBox->value());
+            settings.setValue("rec-angles", m_runRecAngSpinBox->value());
             settings.setValue("solver", m_runSolverSelectComboBox->currentIndex());
             settings.setValue("euler-step", m_runEulerStepSpinBox->value());
             settings.setValue("euler-iter", m_runEulerIterationSpinBox->value());
