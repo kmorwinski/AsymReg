@@ -211,7 +211,7 @@ MainWindow::MainWindow()
 
     m_runGridSizeSpinBox = new QSpinBox;
     m_runGridSizeSpinBox->setSingleStep(10);
-    m_runGridSizeSpinBox->setMaximum(250);
+    m_runGridSizeSpinBox->setMaximum(ASYMREG_GRID_SIZE);
     m_runGridSizeSpinBox->setValue(ASYMREG_GRID_SIZE); // TODO: read value in readSettings()
     m_runGridSizeSpinBox->setDisabled(true); // has no function yet
     runConfigLayoutRight->addRow(tr("system grid size:"), m_runGridSizeSpinBox);
@@ -230,8 +230,8 @@ MainWindow::MainWindow()
 
     m_runEulerStepSpinBox = new QDoubleSpinBox; // value is set in readSettings()
     m_runEulerStepSpinBox->setDecimals(3);
-    m_runEulerStepSpinBox->setSingleStep(.001);
-    m_runEulerStepSpinBox->setRange(.001, 1.);
+    m_runEulerStepSpinBox->setSingleStep(0.001);
+    m_runEulerStepSpinBox->setRange(0.001, H);
     m_runEulerStepSpinBox->setAccelerated(true); // values will spin up/down fast
     m_runEulerStepSpinBox->setToolTip(tr("Parameter \"h\" used in Euler Solver."));
     runConfigLayoutLeft->addRow(tr("Step Size:"), m_runEulerStepSpinBox);
@@ -246,7 +246,7 @@ MainWindow::MainWindow()
     runConfigLayoutRight->addRow(tr("Select Solver:"), m_runSolverSelectComboBox);
 
     m_runEulerIterationSpinBox = new QSpinBox; // value is set in readSettings()
-    m_runEulerIterationSpinBox->setRange(0, 25); // 0: auto, 1-25: manual
+    m_runEulerIterationSpinBox->setRange(0, T); // 0: auto, 1-T: manual
     m_runEulerIterationSpinBox->setSpecialValueText(tr("auto")); // show "auto" when set to 0
     runConfigLayoutRight->addRow(tr("Max. iterations:"), m_runEulerIterationSpinBox);
 
@@ -749,10 +749,15 @@ void MainWindow::plotDataSource()
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Interpolation Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
-    ContourPlotter plotter(m_pressureFunctionPlotSettings, Plotter::Output_SVG_Image);
-    plotter.setData(Z);
+    bool displayOut = (m_runGridSizeSpinBox->value() > 250);
 
-    m_plotImageTitleStack.push(tr("Transducer Pressure"));
+    ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
+                               Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
+    plotter.setData(Z);
+    if (displayOut)
+        plotter.plot(true); // plot to X11 window & do not block thread
+    else                    // no need to call plot() in else case, Plotter d'tor will do
+        m_plotImageTitleStack.push(tr("Transducer Pressure"));
 
     /* enable close-action: */
     m_closeAllPlotsAction->setEnabled(true);
@@ -760,16 +765,18 @@ void MainWindow::plotDataSource()
 
 void MainWindow::plotRegularizedData()
 {
-
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
+    bool displayOut = (m_runGridSizeSpinBox->value() > 250); // SVG image will be tooooo big!!!
 
-    Plotter::OutputType ot = (m_runGridSizeSpinBox->value() > 250) ?
-                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image;
-    ContourPlotter plotter(m_pressureFunctionPlotSettings, ot);
+    ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
+                               Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
     plotter.setData(AsymReg::result());
 
-    m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
+    if (displayOut)
+        plotter.plot(true); // plot to X11 window & do not block thread
+    else                    // no need to call plot() in else case, Plotter d'tor will do
+        m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
 
     /* enable close-action: */
     m_closeAllPlotsAction->setEnabled(true);
@@ -871,10 +878,15 @@ void MainWindow::runAsymReg()
         sett.setTitle(t3.toStdString(), 3);
         sett.setTitle(t4.toStdString(), 4);
 
-        ContourPlotter plotter(&sett, Plotter::Output_SVG_Image);
+        bool displayOut = (m_runGridSizeSpinBox->value() > 250);
+        ContourPlotter plotter(&sett, displayOut ?
+                                   Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
         plotter.setData(AsymReg::result());
 
-        m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
+        if (displayOut)
+            plotter.plot(true); // plot to X11 window & do not block thread
+        else                    // no need to call plot() in else case, Plotter d'tor will do
+            m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
 
         /* enable close-action: */
         m_closeAllPlotsAction->setEnabled(true);
