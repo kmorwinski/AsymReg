@@ -346,6 +346,7 @@ MainWindow::MainWindow()
     QPushButton *dataRegularizedPlotButton = new QPushButton;
     dataRegularizedPlotButton->setText(tr("Plot Regularized Data"));
     dataRegularizedPlotButton->setToolTip(tr("Plots the result after a succesfull regularization run."));
+    dataRegularizedPlotButton->setDisabled(true); // nothing to plot right now => do runAsymReg() first!!!
     connect(dataRegularizedPlotButton, SIGNAL(clicked()),
             this, SLOT(plotRegularizedData()));
 
@@ -385,6 +386,8 @@ MainWindow::MainWindow()
             runConfigGroupBox, SLOT(setDisabled(bool)));
     connect(m_runAsymRegButton, SIGNAL(clicked(bool)), // trigger runAsymReg() function
             this, SLOT(runAsymReg()));
+    connect(m_runAsymRegButton, SIGNAL(clicked(bool)), // enable 'dataRegularizedPlotButton' once runAsymReg() has run
+            dataRegularizedPlotButton, SLOT(setEnabled(bool)));
 
     /* central widget with layout: */
     QVBoxLayout *layout = new QVBoxLayout;
@@ -896,6 +899,9 @@ void MainWindow::runAsymReg()
                                            // will also automatically enable widgets
 }
 
+/**
+ * @todo What should we do if user presses "discard"? Reload from file?
+ */
 void MainWindow::saveDataSource()
 {
     QAction *act = m_dataSourceSelectGroup->checkedAction();
@@ -905,7 +911,10 @@ void MainWindow::saveDataSource()
     }
 
     QFileInfo fileInfo(act->data().toString());
-    saveDataSource(fileInfo.canonicalFilePath());
+    if (fileInfo.exists())
+        saveDataSource(fileInfo.canonicalFilePath());
+    else
+        askToSaveDataSource();
 }
 
 void MainWindow::saveDataSource(const QString &fileName, bool reload)
