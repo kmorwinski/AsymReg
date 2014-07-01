@@ -45,6 +45,7 @@ private slots:
 
     // Asymptotical Regularization:
     void plotRegularizedData();
+    void prepareAsymReg();
     void runAsymReg();
 
     // private slots for viewing plots:
@@ -98,6 +99,7 @@ private:
     QPushButton *m_dataSourceSelectButton;
     QPushButton *m_dataSourceSaveButton;
     bool m_dataSourceChanged;
+    bool m_dataSourceSet;
 
     // members for viewing plots:
     QAction *m_autoPlotDataSrcAction;

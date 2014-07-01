@@ -107,7 +107,8 @@ public:
 MainWindow::MainWindow()
     : m_plotConfigChaned(false),
       m_plotTime(QDateTime::currentDateTime()),
-      m_dataSourceChanged(false)
+      m_dataSourceChanged(false),
+      m_dataSourceSet(false)
 {
     std::cout << "Using Optimisations: "
 #ifdef _OPENMP
@@ -674,6 +675,7 @@ void MainWindow::dataSourceChanged(QTableWidgetItem *item)
 
     /* decorate window's title bar to show modification: */
     m_dataSourceChanged = true;                                   // make sure we know what has changed
+    m_dataSourceSet = false;                                      // need to transfer this data to AsymReg
     m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);      // enable saving of data
     setWindowModified(m_dataSourceChanged || m_plotConfigChaned); // show asterik in widowtitle
 }
@@ -684,6 +686,7 @@ void MainWindow::discardDataSource()
         return;
 
     m_dataSourceChanged = false;
+    m_dataSourceSet = false;
     setWindowModified(m_dataSourceChanged || m_plotConfigChaned);
     m_dataSourceSaveButton->setEnabled(m_dataSourceChanged);
 }
@@ -713,6 +716,7 @@ void MainWindow::loadDataSourceToTableWidget()
     }
 
     m_dataSourceTableWidget->blockSignals(false);
+    m_dataSourceSet = false; // data needs to be transfered to AsymReg
 }
 
 bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *sett)
@@ -733,9 +737,9 @@ bool MainWindow::loadPlotterSettings(const QString &fileName, PlotterSettings *s
 
 void MainWindow::plotDataSource()
 {
-    if (AsymReg::sourceFunction() == nullptr)
-        return;
+    prepareAsymReg();
 
+    Q_ASSERT(AsymReg::sourceFunction() != nullptr);
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
     Duration dur;
@@ -818,11 +822,20 @@ void MainWindow::readSettings()
     }
 }
 
+void MainWindow::prepareAsymReg()
+{
+    if (!m_dataSourceSet) {
+        AsymReg::createSourceFunction(zMat);
+        m_dataSourceSet = true;
+    }
+}
+
 void MainWindow::runAsymReg()
 {
+    prepareAsymReg();
+
     bool autoPlot = m_autoPlotToolButton->isChecked();
 
-    AsymReg::createSourceFunction(zMat);
     if (autoPlot && m_autoPlotDataSrcAction->isChecked())
         plotDataSource();
 
