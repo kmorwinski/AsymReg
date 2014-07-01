@@ -808,13 +808,12 @@ void MainWindow::runAsymReg()
                 m_runSolverSelectComboBox->itemData(m_runSolverSelectComboBox->currentIndex())
                 .value<unsigned int>());
     Duration dur;
-    const Matrix<double, Dynamic, Dynamic> &X =
-            AsymReg::regularize(m_runRecAngSpinBox->value(),
-                                solver,
-                                m_runEulerIterationSpinBox->value(),
-                                m_runEulerStepSpinBox->value(),
-                                /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,
-                                &dur);
+    double error = AsymReg::regularize(m_runRecAngSpinBox->value(),
+                                       solver,
+                                       m_runEulerIterationSpinBox->value(),
+                                       m_runEulerStepSpinBox->value(),
+                                       /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,
+                                       &dur);
 
     auto dt = dur.value();
     auto unit = dur.unit();
@@ -826,7 +825,7 @@ void MainWindow::runAsymReg()
         t3 = "[" + m_runSolverSelectComboBox->currentText() + ": "
                 + QString::number(m_runEulerIterationSpinBox->value()) + " iteration(s), step "
                 + QString::number(m_runEulerStepSpinBox->value(), 'f', 3) + "]";
-        t4 = "[ mean error ]";
+        t4 = "[ mean error = " + QString::number(error, 'f') + " ]";
 
         Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
         ContourPlotterSettings sett;
@@ -836,7 +835,7 @@ void MainWindow::runAsymReg()
         sett.setTitle(t4.toStdString(), 4);
 
         ContourPlotter plotter(&sett, Plotter::Output_SVG_Image);
-        plotter.setData(X);
+        plotter.setData(AsymReg::result());
 
         m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
 

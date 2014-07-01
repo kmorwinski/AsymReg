@@ -122,9 +122,11 @@ private:
 /**
  * @brief Class which holds the right-hand-side of our regularization formula.
  */
-template <typename DerivedMatrix, typename DerivedVector, typename OtherDerivedMatrix>
+template <typename DerivedMatrix, typename DerivedVector>
 class DerivateOperator
 {
+    typedef typename DerivedVector::Scalar Scalar;
+
 public:
     DerivateOperator(const EigenBase<DerivedMatrix> &Sigma,
                      const EigenBase<DerivedVector> &S, const EigenBase<DerivedVector> &Xsi,
@@ -139,10 +141,34 @@ public:
     }
 
     template <typename Derived, typename OtherDerived>
+    void error(const EigenBase<Derived> &X, EigenBase<OtherDerived> &Error)
+    {
+        EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived);
+
+        constexpr int numSamples = 2/AR_TRGT_SMPL_RATE + 1;
+
+        BilinearInterpol interp(m_Xsi, m_Xsi, X);
+        SrcFuncAccOp sfao(&interp);
+
+        for (int n = 0; n < Error.size(); ++n) {
+            RadonOperator<SrcFuncAccOp, void (double, double *, double *)>
+                    Radon(sfao, circleBound, m_Sigma.col(n));
+                    //Radon(sfao, squareBound, m_Sigma.col(n));
+
+            Matrix<double, 1, numSamples> RadonData; // temporary vector for radon data
+            for (int j = 0; j < m_S.cols(); ++j)
+                RadonData[j] = Radon(m_S.coeffRef(j));
+
+            Matrix<double, 1, numSamples> SchlierenData; // temporary vector for schlieren data
+            SchlierenData = RadonData.cwiseProduct(RadonData);
+
+            Error.derived()[n] = (m_DataSet[n] - SchlierenData).norm(); // ||Y_delta - F(Xn)||
+        }
+    }
+
+    template <typename Derived, typename OtherDerived>
     void operator()(const int n, const EigenBase<Derived> &Xin, EigenBase<OtherDerived> &Xout)
     {
-        typedef typename OtherDerivedMatrix::Scalar Scalar;
-
         constexpr int numSamples = 2/AR_TRGT_SMPL_RATE + 1;
 
         BilinearInterpol interp(m_Xsi, m_Xsi, Xin);
@@ -329,9 +355,9 @@ void AsymReg::generateDataSet(int recordingAngles, Duration *time)
         *time = t2 - t1;
 }
 
-Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
-                                                      ODE_Solver solver, int iterations, double step,
-                                                      const PlotterSettings *pl, Duration *time)
+double AsymReg::regularize(int recordingAngles,
+                           ODE_Solver solver, int iterations, double step,
+                           const PlotterSettings *pl, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
     typedef typename MatrixXd::Scalar Scalar;
@@ -395,14 +421,13 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
     const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
     RowVectorXd S = VectorXd::LinSpaced(Sequential, numSamples, -1., 1.);
 
+    RowVectorXd Error(angles);
+    Error.setConstant(-1.0);
+
     int run = 0;
     int max = (iterations > 0) ? iterations : T;
     do {
-        std::string itrStr = "Euler iteration no " + std::to_string(run + 1)
-                             + " of " + std::to_string(max);
-        std::cout << itrStr << std::endl;
-
-        DerivateOperator<MatrixXd, RowVectorXd, MatrixXd> derivs(Sigma, S, Xsi, &m_DataSet[0]);
+        DerivateOperator<MatrixXd, RowVectorXd> derivs(Sigma, S, Xsi, &m_DataSet[0]);
         Matrix<double , Dynamic, Dynamic> dXdt[angles];
 
         for (int n = 0; n < angles; ++n) {
@@ -423,6 +448,13 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
             ODE::rk4(angles, Xn, &dXdt[0], h, Xdot, derivs);
             break;
         }
+
+        derivs.error(Xdot, Error);
+
+        std::string itrStr = "Finished iteration no. " + std::to_string(run + 1)
+                             + " (of " + std::to_string(max) + ")";
+        std::cout << itrStr << " with mean error = " << Error.mean()
+                  << std::endl;
 
         Xn = Xdot; // use regularized data for next iteration step
 
@@ -449,7 +481,7 @@ Matrix<double, Dynamic, Dynamic> &AsymReg::regularize(int recordingAngles,
 
     /* Xdot = Xn + 2hR*{R(Xn)[Y - F(Xn)]} */
     m_Result = Xdot;
-    return m_Result;
+    return Error.mean();
 }
 
 Matrix<double, Dynamic, Dynamic> AsymReg::sourceFunctionPlotData(Duration *time)

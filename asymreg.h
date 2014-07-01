@@ -33,9 +33,12 @@ public:
         RungeKutta // RK4
     };
 
-    static Matrix<double, Dynamic, Dynamic> &regularize(int recordingAngles,
-                                                        ODE_Solver solver, int iterations, double step,
-                                                        const PlotterSettings *pl, Duration *time = nullptr);
+    static double regularize(int recordingAngles,
+                             ODE_Solver solver, int iterations, double step,
+                             const PlotterSettings *pl, Duration *time = nullptr);
+
+    static const MatrixXd &result()
+    { return m_Result; }
 
 private:
     static void setSourceFunction(BilinearInterpol *func);

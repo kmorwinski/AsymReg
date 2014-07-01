@@ -75,9 +75,9 @@ int main(int argc, char **argv)
     sett.setTitle("Regularisierte Loesung Xdot", 1);
 
     Duration dt2;
-    Matrix<double, Dynamic, Dynamic> &Xdot = AsymReg::regularize(0,
-                                                                 AsymReg::Midpoint, 0, 0.,
-                                                                 nullptr /*&sett*/, &dt2);
+    double err = AsymReg::regularize(0, AsymReg::Midpoint, 0, 0., nullptr /*&sett*/, &dt2);
+
+    auto &Xdot = AsymReg::result();
     //std::cout << "Xdot =" << std::endl
     //          << Xdot << std::endl << std::endl;
 
