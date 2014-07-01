@@ -1,13 +1,13 @@
 #ifndef ASYMREG_H_
 #define ASYMREG_H_
 
-#define ASYMREG_DATSRC_SIZE  10
+#define ASYMREG_DATSRC_SIZE  30
 
-#define ASYMREG_GRID_SIZE  200
+#define ASYMREG_GRID_SIZE  128
 
-#define AR_NUM_REC_ANGL  50
+#define AR_NUM_REC_ANGL  400
 
-#define AR_TRGT_SMPL_RATE  0.025
+#define AR_TRGT_SMPL_RATE  0.05
 
 #include "eigen.h"
 
@@ -44,8 +44,8 @@ private:
     static void setSourceFunction(BilinearInterpol *func);
 
     static BilinearInterpol *m_sourceFunc;
-    static RowVectorXd m_DataSet[AR_NUM_REC_ANGL];
     static Matrix<double, Dynamic, Dynamic> m_Result;
+    static RowVectorXd m_DataSet[AR_NUM_REC_ANGL];
 };
 
 #endif // ASYMREG_H_

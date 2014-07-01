@@ -7,7 +7,8 @@
 #include "plotter.h"
 #include "plottersettings.h"
 
-#define DATA_FILE  "../data/recang-testdata-10x10.csv" // TODO: read from QSettings? or from argv?
+#define DATA_FILE  "../data/data-circle-30x30.csv" // TODO: read from QSettings? or from argv?
+//#define DATA_FILE  "../data/recang-testdata-10x10.csv" // TODO: read from QSettings? or from argv?
 //#define DATA_FILE  "../data/data2-11x11.csv" // TODO: read from QSettings? or from argv?
 
 using ts = std::string; // ts (ToString) is much shorter

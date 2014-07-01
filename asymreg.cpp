@@ -451,7 +451,7 @@ double AsymReg::regularize(int recordingAngles,
 
         derivs.error(Xdot, Error);
 
-        std::string itrStr = "Finished iteration no. " + std::to_string(run + 1)
+        std::string itrStr = "Iteration no. " + std::to_string(run + 1)
                              + " (of " + std::to_string(max) + ")";
         std::cout << itrStr << " with mean error = " << Error.mean()
                   << std::endl;
