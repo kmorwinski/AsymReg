@@ -44,6 +44,7 @@ private slots:
     void changedPlotConfig();
 
     // Asymptotical Regularization:
+    void plotRegularizedData();
     void runAsymReg();
 
     // private slots for viewing plots:

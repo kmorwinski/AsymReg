@@ -342,6 +342,12 @@ MainWindow::MainWindow()
     m_plotConfigSelectButton->setToolTip(tr("Click here to select the configuration for data plotting."));
     m_plotConfigSelectButton->setMenu(plotConfigSelectMenu);
 
+    QPushButton *dataRegularizedPlotButton = new QPushButton;
+    dataRegularizedPlotButton->setText(tr("Plot Regularized Data"));
+    dataRegularizedPlotButton->setToolTip(tr("Plots the result after a succesfull regularization run."));
+    connect(dataRegularizedPlotButton, SIGNAL(clicked()),
+            this, SLOT(plotRegularizedData()));
+
     /* buttons' layout: */
     QVBoxLayout *buttonLayout = new QVBoxLayout;
     buttonLayout->addWidget(m_dataSourceSelectButton);
@@ -350,6 +356,7 @@ MainWindow::MainWindow()
     buttonLayout->addStretch(1);
     buttonLayout->addWidget(m_plotConfigSelectButton);
     buttonLayout->addStretch(2);
+    buttonLayout->addWidget(dataRegularizedPlotButton);
 
     /* Area with Scrollbar for all "main"/"middle" widgets: */
     QHBoxLayout *middleLayout = new QHBoxLayout;
@@ -742,6 +749,23 @@ void MainWindow::plotDataSource()
     plotter.setData(Z);
 
     m_plotImageTitleStack.push(tr("Transducer Pressure"));
+
+    /* enable close-action: */
+    m_closeAllPlotsAction->setEnabled(true);
+}
+
+void MainWindow::plotRegularizedData()
+{
+
+    Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
+
+
+    Plotter::OutputType ot = (m_runGridSizeSpinBox->value() > 250) ?
+                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image;
+    ContourPlotter plotter(m_pressureFunctionPlotSettings, ot);
+    plotter.setData(AsymReg::result());
+
+    m_plotImageTitleStack.push(tr("Regularized Transducer Pressure"));
 
     /* enable close-action: */
     m_closeAllPlotsAction->setEnabled(true);
