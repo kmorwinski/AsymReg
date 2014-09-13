@@ -4,7 +4,7 @@
 //#define EIGEN_IO_FORMAT_DONT_THROW_EXCEPTIONS // disables throwing IOFormatExceptions in Eigen::import_matrix()
 
 // some usefull printing formats:
-#define EIGEN_IOFMT_CSV     IOFormat(FullPrecision, 0, ", ") // <-- ',' without space is important
+#define EIGEN_IOFMT_CSV     IOFormat(FullPrecision, 0, ",") // <-- ',' without space is important
 #define EIGEN_IOFMT_PRETTY  IOFormat(4, 0, ", ", "\n", "[", "]")
 #define EIGEN_IOFMT_OCTAVE  IOFormat(StreamPrecision, 0, ", ", ";\n", "", "", "[", " ]")
 

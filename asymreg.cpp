@@ -63,7 +63,7 @@ public:
          *
          * Todo: documents want (r,s) = D^1  (unit disc)
          */
-        static Transform<Scalar, 2, Affine> tr = Translation2d(5, 5) * Scaling(3.0);
+        static Transform<Scalar, 2, Affine> tr = Translation2d(5, 5) * Scaling(5.0);
 
         /* translate pts to phys. coord. system: */
         Matrix<Scalar, 2, Dynamic> xys = tr * pts;
@@ -209,7 +209,7 @@ public:
                  *
                  * Todo: documents want (r,s) = D^1  (unit disc)
                  */
-                static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(3.0)).inverse();
+                static Transform<Scalar, 2, Affine> trInv = (Translation2d(5, 5) * Scaling(5.0)).inverse();
                 //STDOUT_MATRIX(trInv);
 
                 /* translate s to target coord. system: */

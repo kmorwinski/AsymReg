@@ -752,7 +752,7 @@ void MainWindow::plotDataSource()
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Interpolation Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
-    bool displayOut = (m_runGridSizeSpinBox->value() > 250);
+    bool displayOut = (m_runGridSizeSpinBox->value() > 256);
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
                                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
@@ -770,7 +770,7 @@ void MainWindow::plotRegularizedData()
 {
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
-    bool displayOut = (m_runGridSizeSpinBox->value() > 250); // SVG image will be tooooo big!!!
+    bool displayOut = (m_runGridSizeSpinBox->value() > 256); // SVG image will be tooooo big!!!
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
                                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
@@ -859,7 +859,7 @@ void MainWindow::runAsymReg()
                                        solver,
                                        m_runEulerIterationSpinBox->value(),
                                        m_runEulerStepSpinBox->value(),
-                                       /*autoPlot ? m_pressureFunctionPlotSettings :*/ nullptr,
+                                       nullptr,//m_pressureFunctionPlotSettings,
                                        &dur);
 
     auto dt = dur.value();
@@ -881,7 +881,7 @@ void MainWindow::runAsymReg()
         sett.setTitle(t3.toStdString(), 3);
         sett.setTitle(t4.toStdString(), 4);
 
-        bool displayOut = (m_runGridSizeSpinBox->value() > 250);
+        bool displayOut = (m_runGridSizeSpinBox->value() > 256);
         ContourPlotter plotter(&sett, displayOut ?
                                    Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
         plotter.setData(AsymReg::result());
