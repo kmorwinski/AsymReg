@@ -146,6 +146,7 @@ public:
         EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived);
 
         constexpr int numSamples = 2/AR_TRGT_SMPL_RATE + 1;
+        constexpr double l2norm = sqrt(AR_TRGT_SMPL_RATE); // norm correction: ||x||_L2 = l2norm * ||x||_2
 
         BilinearInterpol interp(m_Xsi, m_Xsi, X);
         SrcFuncAccOp sfao(&interp);
@@ -162,7 +163,7 @@ public:
             Matrix<double, 1, numSamples> SchlierenData; // temporary vector for schlieren data
             SchlierenData = RadonData.cwiseProduct(RadonData);
 
-            Error.derived()[n] = (m_DataSet[n] - SchlierenData).norm(); // ||Y_delta - F(Xn)||
+            Error.derived()[n] = l2norm * (m_DataSet[n] - SchlierenData).norm(); // ||Y_delta - F(Xn)||_L2
         }
     }
 
