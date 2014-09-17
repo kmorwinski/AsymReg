@@ -9,6 +9,8 @@
 
 #define AR_TRGT_SMPL_RATE  0.05
 
+#define AR_DELTA 0.02
+
 #include "eigen.h"
 
 class BilinearInterpol;
@@ -25,6 +27,7 @@ public:
     static void createSourceFunction(const MatrixXd &srcDat);
 
     static void generateDataSet(int recordingAngles,
+                                double delta = AR_DELTA,
                                 Duration *time = nullptr);
 
     enum ODE_Solver {
@@ -33,7 +36,7 @@ public:
         RungeKutta // RK4
     };
 
-    static double regularize(int recordingAngles,
+    static double regularize(int recordingAngles, double delta,
                              ODE_Solver solver, int iterations, double step,
                              const PlotterSettings *pl, Duration *time = nullptr);
 

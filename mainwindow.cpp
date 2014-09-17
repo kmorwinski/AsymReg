@@ -221,6 +221,14 @@ MainWindow::MainWindow()
     m_runRecAngSpinBox->setSingleStep(2); // only even numbers are allowed in AsymReg
     runConfigLayoutLeft->addRow(tr("system recording angles"), m_runRecAngSpinBox);
 
+    m_runDeltaSpinBox = new QDoubleSpinBox; // value is set in readSettings()
+    m_runDeltaSpinBox->setDecimals(3);
+    m_runDeltaSpinBox->setSingleStep(0.001);
+    m_runDeltaSpinBox->setRange(0.001, 0.5);
+    m_runDeltaSpinBox->setAccelerated(true); // values will spin up/down fast
+    m_runDeltaSpinBox->setToolTip(tr("Datenfehlerniveau delta"));
+    runConfigLayoutRight->addRow(tr("delta:"), m_runDeltaSpinBox);
+
     QLabel *odeLabel = new QLabel;
     odeLabel->setText(tr("ODE Solver Configuration"));
     odeLabel->setFont(runDescriptionFont);
@@ -819,6 +827,7 @@ void MainWindow::readSettings()
         settings.beginGroup("AlgoRuntimeConfig");
             //m_runGridSizeSpinBox->setValue(settings.value("grid-size", ASYMREG_GRID_SIZE).toInt());
             m_runRecAngSpinBox->setValue(settings.value("rec-angles", AR_NUM_REC_ANGL).toInt());
+            m_runDeltaSpinBox->setValue(settings.value("delta", .02).toDouble());
             m_runSolverSelectComboBox->setCurrentIndex(settings.value("solver", 0).toInt());
             m_runEulerStepSpinBox->setValue(settings.value("euler-step", H).toDouble());
             m_runEulerIterationSpinBox->setValue(settings.value("euler-iter", T).toInt());
@@ -849,13 +858,14 @@ void MainWindow::runAsymReg()
     if (autoPlot && m_autoPlotDataSrcAction->isChecked())
         plotDataSource();
 
-    AsymReg::generateDataSet(m_runRecAngSpinBox->value());
+    AsymReg::generateDataSet(m_runRecAngSpinBox->value(), m_runDeltaSpinBox->value());
 
     AsymReg::ODE_Solver solver = static_cast<AsymReg::ODE_Solver>(
                 m_runSolverSelectComboBox->itemData(m_runSolverSelectComboBox->currentIndex())
                 .value<unsigned int>());
     Duration dur;
     double error = AsymReg::regularize(m_runRecAngSpinBox->value(),
+                                       m_runDeltaSpinBox->value(),
                                        solver,
                                        m_runEulerIterationSpinBox->value(),
                                        m_runEulerStepSpinBox->value(),
@@ -982,6 +992,7 @@ void MainWindow::saveSettings() const
         settings.beginGroup("AlgoRuntimeConfig");
             //settings.setValue("grid-size", m_runGridSizeSpinBox->value());
             settings.setValue("rec-angles", m_runRecAngSpinBox->value());
+            settings.setValue("delta", m_runDeltaSpinBox->value());
             settings.setValue("solver", m_runSolverSelectComboBox->currentIndex());
             settings.setValue("euler-step", m_runEulerStepSpinBox->value());
             settings.setValue("euler-iter", m_runEulerIterationSpinBox->value());

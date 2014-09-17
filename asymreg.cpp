@@ -264,7 +264,7 @@ void AsymReg::createSourceFunction(const MatrixXd &srcDat)
     AsymReg::setSourceFunction(func);
 }
 
-void AsymReg::generateDataSet(int recordingAngles, Duration *time)
+void AsymReg::generateDataSet(int recordingAngles, double delta, Duration *time)
 {
     typedef typename MatrixXd::Index Index;
 
@@ -299,6 +299,7 @@ void AsymReg::generateDataSet(int recordingAngles, Duration *time)
     const Index numSamples = 2/AR_TRGT_SMPL_RATE + 1;
     static_assert(numSamples % 2, "only values for AR_TRGT_SMPL_RATE with uneven"
                                   "result of \"(2/AR_TRGT_SMPL_RATE) + 1\" are allowed");
+    constexpr double l2norm = sqrt(AR_TRGT_SMPL_RATE);
 
     /* S:
      * ==
@@ -338,12 +339,21 @@ void AsymReg::generateDataSet(int recordingAngles, Duration *time)
 
         /* finally square each entry and save as dataSet for angle phi_n: */
         m_DataSet[n] = Integral.square();
+        RowVectorXd yd = m_DataSet[n];
 
+        /* create random unit vector for data pertubation: */
+        if (delta > 0.0) {
+            RowVectorXd Rand = RowVectorXd::Random(2/AR_TRGT_SMPL_RATE + 1);
+            //RowVectorXd RandN = Rand.normalized() * l2norm;
+            m_DataSet[n] += (delta / l2norm) * Rand.normalized();
+            //double diff = (m_DataSet[n] - yd).norm() * l2norm;
+            //std::cout << "diff =" << diff << std::endl;
+        }
     }
     auto t2 = hrc::now(); // Stop timing
 
     /* printing generated data y_n to stdout: */
-    std::cout << "Resulting in the following undisturbed (delta = 0) data:" << std::endl;
+    std::cout << "Resulting in the following disturbed (delta =" << DELTA << ") data:" << std::endl;
     for (Index n = 0; n < angles; ++n) {
         std::cout << "y_" << n << "(s) =" << std::endl
                   << m_DataSet[n] << std::endl
@@ -356,7 +366,7 @@ void AsymReg::generateDataSet(int recordingAngles, Duration *time)
         *time = t2 - t1;
 }
 
-double AsymReg::regularize(int recordingAngles,
+double AsymReg::regularize(int recordingAngles, double delta,
                            ODE_Solver solver, int iterations, double step,
                            const PlotterSettings *pl, Duration *time)
 {
