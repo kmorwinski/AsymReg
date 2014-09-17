@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     print_line("Generating Schlieren Data Sets...");
 
     Duration dt;
-    AsymReg::generateDataSet(0, &dt);
+    AsymReg::generateDataSet(0, AR_DELTA, &dt);
 
     print_line_begin("...done (time used: ");
     std::cout << dt.value() << dt.unit() << ").";
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     sett.setTitle("Regularisierte Loesung Xdot", 1);
 
     Duration dt2;
-    double err = AsymReg::regularize(0, AsymReg::RungeKutta, 0, 0., nullptr /*&sett*/, &dt2);
+    double err = AsymReg::regularize(0, AR_DELTA, AsymReg::RungeKutta, 0, 0., nullptr /*&sett*/, &dt2);
 
     auto &Xdot = AsymReg::result();
     //std::cout << "Xdot =" << std::endl
