@@ -3,9 +3,9 @@
 
 #define ASYMREG_DATSRC_SIZE  30
 
-#define ASYMREG_GRID_SIZE  256
+#define ASYMREG_GRID_SIZE  300
 
-#define AR_NUM_REC_ANGL  400
+#define AR_NUM_REC_ANGL  100
 
 #define AR_TRGT_SMPL_RATE  0.05
 

@@ -219,7 +219,7 @@ MainWindow::MainWindow()
     m_runRecAngSpinBox = new QSpinBox; // value is set in readSettings()
     m_runRecAngSpinBox->setRange(2, N);
     m_runRecAngSpinBox->setSingleStep(2); // only even numbers are allowed in AsymReg
-    runConfigLayoutLeft->addRow(tr("system recording angles"), m_runRecAngSpinBox);
+    runConfigLayoutLeft->addRow(tr("system recording angles:"), m_runRecAngSpinBox);
 
     m_runDeltaSpinBox = new QDoubleSpinBox; // value is set in readSettings()
     m_runDeltaSpinBox->setDecimals(3);
@@ -760,7 +760,7 @@ void MainWindow::plotDataSource()
     auto unit = dur.unit();
     statusBar()->showMessage(tr("Interpolation Time: %L1%2").arg(dt, 0, 'f', 3).arg(unit));
 
-    bool displayOut = (m_runGridSizeSpinBox->value() > 256);
+    bool displayOut = (m_runGridSizeSpinBox->value() > 300);
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
                                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
@@ -778,7 +778,7 @@ void MainWindow::plotRegularizedData()
 {
     Q_ASSERT(m_pressureFunctionPlotSettings != nullptr);
 
-    bool displayOut = (m_runGridSizeSpinBox->value() > 256); // SVG image will be tooooo big!!!
+    bool displayOut = (m_runGridSizeSpinBox->value() > 300); // SVG image will be tooooo big!!!
 
     ContourPlotter plotter(m_pressureFunctionPlotSettings, displayOut ?
                                Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
@@ -891,7 +891,7 @@ void MainWindow::runAsymReg()
         sett.setTitle(t3.toStdString(), 3);
         sett.setTitle(t4.toStdString(), 4);
 
-        bool displayOut = (m_runGridSizeSpinBox->value() > 256);
+        bool displayOut = (m_runGridSizeSpinBox->value() > 300);
         ContourPlotter plotter(&sett, displayOut ?
                                    Plotter::Output_Display_Widget : Plotter::Output_SVG_Image);
         plotter.setData(AsymReg::result());
