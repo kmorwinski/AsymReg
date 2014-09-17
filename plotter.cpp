@@ -36,6 +36,8 @@ ContourPlotter::ContourPlotter(const PlotterSettings *settings, OutputType out)
     // NTIC is the number of ticks (>= 0).
     // CAX is a character string that defines the axes. Default: (2, 'XYZ').
     m_dislin->ticks(10, "xy");
+
+    m_dislin->axslen(1400, 1400);
 }
 
 void ContourPlotter::setData(const Eigen::MatrixXd &zMat)
