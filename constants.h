@@ -7,5 +7,6 @@ constexpr int    N   = AR_NUM_REC_ANGL; /**< Radontransform: maximum number of r
 constexpr double PHI = 180.0;           /**< Radontransform: highest possible recording angle [deg] */
 constexpr double X0_C = -0.01;           /**< ODE Solver: constant used as initial value for X0 matrix */
 constexpr double DELTA = AR_DELTA;      /**< Inverse Problem: data pertubation */
+constexpr double TAU = 2.0;             /**< Inverse Problem: morozov's diskrepancy */
 
 #endif // CONSTANTS_H_

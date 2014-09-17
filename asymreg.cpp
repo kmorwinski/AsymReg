@@ -461,13 +461,32 @@ double AsymReg::regularize(int recordingAngles, double delta,
         }
 
         derivs.error(Xdot, Error);
+        double err = Error.mean();
 
-        std::string itrStr = "Iteration no. " + std::to_string(run + 1)
-                             + " (of " + std::to_string(max) + ")";
-        std::cout << itrStr << " with mean error = " << Error.mean()
-                  << std::endl;
+        std::string itrStr;
+        if (iterations == 0) { // discrepancy principle is used
+            itrStr = "Iteration no. " + std::to_string(run + 1)
+                     + " (of max " + std::to_string(max) + ")";
+        } else {
+            itrStr = "Iteration no. " + std::to_string(run + 1)
+                     + " / " + std::to_string(max);
+        }
 
-        Xn = Xdot; // use regularized data for next iteration step
+        std::cout << itrStr << " with error = " << err << std::endl;
+
+        if (isnan(err)) {
+            std::cout << "Something bad happend! Stopping now!!!" << std::endl;
+            break; // we take the last result, because it is probably
+                   // the better one (with an error != NAN)
+        }
+
+        Xn = Xdot; // use regularized data for next iteration step (also as result)
+
+        /* discrepancy principle: */
+        if ((iterations == 0) && (err <= delta * TAU)) {
+            std::cout << "Stopping due to discrepancy level reached!" << std::endl;
+            break; // quit while(), err is small enough
+        }
 
         /* plot lastest iteration result: */
         if (sett != nullptr) {
